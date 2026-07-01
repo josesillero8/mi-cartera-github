@@ -1,16 +1,14 @@
 """
-Para cada acción listada en tickers.json (identificada por ISIN, con símbolo
-opcional si cotiza en varias bolsas y quieres fijar una en concreto):
-  1. Si no se indica 'symbol', resuelve el símbolo bursátil vía la ISIN API de
-     Financial Modeling Prep (con caché en data/isin_map.json). OJO: si el
-     ISIN cotiza en varias bolsas, FMP puede devolver cualquiera de ellas —
-     para evitar ambigüedad, es más fiable fijar el 'symbol' tú mismo.
-  2. Consulta el precio actual de todos los símbolos de una vez.
-  3. Actualiza:
-       - data/prices.json   -> último precio conocido de cada ISIN
-       - data/history.json  -> serie temporal (para el gráfico de evolución)
+Consulta el precio actual de cada acción listada en tickers.json usando el
+endpoint público (no oficial) de Yahoo Finance, que no requiere API key y
+cubre tanto EEUU como bolsas internacionales. Actualiza:
+  - data/prices.json   -> último precio conocido de cada ISIN
+  - data/history.json  -> serie temporal (para el gráfico de evolución)
 
-Requiere la variable de entorno FMP_API_KEY (se pasa como GitHub Secret).
+Nota: este endpoint no es una API oficial de Yahoo. Lleva años siendo estable
+y es ampliamente usado, pero podría cambiar sin aviso. Si algún símbolo deja
+de funcionar, revisa el log de la Action: se avisa símbolo por símbolo y el
+resto de acciones no se ve afectado (esa en concreto vuelve a precio manual).
 """
 import json
 import os
@@ -19,18 +17,13 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
-API_KEY = os.environ.get("FMP_API_KEY")
-if not API_KEY:
-    print("Falta la variable de entorno FMP_API_KEY", file=sys.stderr)
-    sys.exit(1)
-
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TICKERS_PATH = os.path.join(ROOT, "tickers.json")
 PRICES_PATH = os.path.join(ROOT, "data", "prices.json")
 HISTORY_PATH = os.path.join(ROOT, "data", "history.json")
-ISIN_MAP_PATH = os.path.join(ROOT, "data", "isin_map.json")
 
 MAX_HISTORY_POINTS = 2000  # evita que el archivo crezca sin límite
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; mi-cartera-bot/1.0)"}
 
 
 def load_json(path, default):
@@ -40,16 +33,32 @@ def load_json(path, default):
     return default
 
 
-def fetch_json(url):
-    with urllib.request.urlopen(url, timeout=20) as resp:
-        return json.loads(resp.read().decode())
+def fetch_yahoo_quote(symbol):
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=1d"
+    req = urllib.request.Request(url, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        data = json.loads(resp.read().decode())
+    result = data.get("chart", {}).get("result")
+    if not result:
+        raise ValueError("Yahoo no devolvió datos para este símbolo")
+    meta = result[0]["meta"]
+    price = meta.get("regularMarketPrice")
+    prev_close = meta.get("previousClose") or meta.get("chartPreviousClose")
+    if price is None:
+        raise ValueError("Respuesta sin precio")
+    change = (price - prev_close) if prev_close else None
+    change_pct = (change / prev_close * 100) if change is not None and prev_close else None
+    return {
+        "price": price,
+        "change": change,
+        "changesPercentage": change_pct,
+        "currency": meta.get("currency"),
+    }
 
 
 with open(TICKERS_PATH, "r", encoding="utf-8") as f:
     config = json.load(f)
 
-# Acepta dos formatos en "tickers": strings simples ("ES0148396007") o
-# objetos con símbolo fijado ({"isin": "...", "symbol": "...", "label": "..."})
 raw_entries = config.get("tickers", config.get("isins", []))
 entries = []
 for item in raw_entries:
@@ -66,80 +75,35 @@ if not entries:
     print("tickers.json no tiene ninguna acción configurada, nada que hacer.")
     sys.exit(0)
 
-isin_map = load_json(ISIN_MAP_PATH, {})  # { ISIN: {symbol, companyName} }
-
-for e in entries:
-    isin = e["isin"]
-    if e["symbol"]:
-        # Símbolo fijado a mano: no hace falta resolver, pero lo guardamos en caché igual
-        isin_map[isin] = {"symbol": e["symbol"], "companyName": e["label"] or isin_map.get(isin, {}).get("companyName")}
-        continue
-    if isin in isin_map:
-        continue
-    url = f"https://financialmodelingprep.com/stable/search-isin?isin={isin}&apikey={API_KEY}"
-    try:
-        result = fetch_json(url)
-    except urllib.error.URLError as ex:
-        print(f"Aviso: no se pudo resolver el ISIN {isin}: {ex}", file=sys.stderr)
-        continue
-    if not result:
-        print(f"Aviso: FMP no devolvió ningún símbolo para el ISIN {isin}", file=sys.stderr)
-        continue
-    if len(result) > 1:
-        print(f"Aviso: {isin} cotiza en {len(result)} mercados distintos, se usó '{result[0]['symbol']}' por defecto. "
-              f"Si no es el que quieres, fija 'symbol' explícitamente en tickers.json.", file=sys.stderr)
-    chosen = result[0]
-    isin_map[isin] = {
-        "symbol": chosen.get("symbol"),
-        "companyName": chosen.get("companyName") or chosen.get("name"),
-    }
-
-os.makedirs(os.path.dirname(ISIN_MAP_PATH), exist_ok=True)
-with open(ISIN_MAP_PATH, "w", encoding="utf-8") as f:
-    json.dump(isin_map, f, ensure_ascii=False, indent=2)
-
-symbol_to_isins = {}
-for e in entries:
-    isin = e["isin"]
-    entry = isin_map.get(isin)
-    if entry and entry.get("symbol"):
-        symbol_to_isins.setdefault(entry["symbol"], []).append(isin)
-
-if not symbol_to_isins:
-    print("No se pudo resolver ningún símbolo a partir de los ISIN configurados.", file=sys.stderr)
-    sys.exit(1)
-
-symbols = ",".join(symbol_to_isins.keys())
-quote_url = f"https://financialmodelingprep.com/stable/batch-quote?symbols={symbols}&apikey={API_KEY}"
-try:
-    quotes = fetch_json(quote_url)
-except urllib.error.URLError as ex:
-    print(f"Error consultando precios en FMP: {ex}", file=sys.stderr)
-    sys.exit(1)
-
-quotes_by_symbol = {q["symbol"]: q for q in quotes if "symbol" in q}
-
 now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
 prices = load_json(PRICES_PATH, {})
 history = load_json(HISTORY_PATH, {"points": []})
 
 snapshot = {}
-for symbol, isin_list in symbol_to_isins.items():
-    q = quotes_by_symbol.get(symbol)
-    if not q:
-        print(f"Aviso: sin cotización para {symbol}", file=sys.stderr)
+any_ok = False
+for e in entries:
+    isin = e["isin"]
+    symbol = e["symbol"] or isin  # si no hay symbol fijado, se intenta con el propio ISIN (rara vez funciona en Yahoo)
+    try:
+        q = fetch_yahoo_quote(symbol)
+    except (urllib.error.URLError, ValueError, KeyError, IndexError) as ex:
+        print(f"Aviso: no se pudo obtener precio para {isin} ({symbol}): {ex}", file=sys.stderr)
         continue
-    price = q.get("price")
-    for isin in isin_list:
-        prices[isin] = {
-            "symbol": symbol,
-            "companyName": isin_map[isin].get("companyName"),
-            "price": price,
-            "change": q.get("change"),
-            "changesPercentage": q.get("changePercentage"),
-            "updated": now_iso,
-        }
-        snapshot[isin] = price
+    prices[isin] = {
+        "symbol": symbol,
+        "companyName": e["label"],
+        "price": q["price"],
+        "change": q["change"],
+        "changesPercentage": q["changesPercentage"],
+        "currency": q["currency"],
+        "updated": now_iso,
+    }
+    snapshot[isin] = q["price"]
+    any_ok = True
+
+if not any_ok:
+    print("No se pudo obtener el precio de ninguna acción configurada.", file=sys.stderr)
+    sys.exit(1)
 
 history["points"].append({"timestamp": now_iso, "prices": snapshot})
 history["points"] = history["points"][-MAX_HISTORY_POINTS:]
@@ -151,4 +115,3 @@ with open(HISTORY_PATH, "w", encoding="utf-8") as f:
     json.dump(history, f, ensure_ascii=False, indent=2)
 
 print(f"Actualizado: {list(snapshot.keys())}")
-

@@ -1,5 +1,5 @@
 {
-  "_comentario": "Cada acción lleva su ISIN y, cuando cotiza en varias bolsas, el 'symbol' exacto que quieres usar (así no hay ambigüedad de mercado/divisa). Si algún día añades una acción con un solo mercado posible, puedes omitir 'symbol' y se resuelve solo.",
+  "_comentario": "Cada acción lleva su ISIN y el símbolo bursátil tal y como lo usa Yahoo Finance (fuente de los precios automáticos). Si alguno no coincide exactamente, revisa el símbolo en https://finance.yahoo.com/lookup.",
   "tickers": [
     { "isin": "IE00B5BMR087", "symbol": "SXR8.DE", "label": "iShares Core S&P 500 UCITS ETF" },
     { "isin": "IE00B4ND3602", "symbol": "PPFB.SG", "label": "iShares Physical Gold ETC" },
