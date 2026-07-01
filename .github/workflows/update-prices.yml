@@ -1,0 +1,33 @@
+name: Actualizar precios
+
+on:
+  schedule:
+    # Cada 15 minutos, solo en horario de mercado aproximado (7:00-22:00 UTC, L-V)
+    - cron: "*/15 7-22 * * 1-5"
+  workflow_dispatch: {}   # te permite lanzarlo manualmente desde GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Consultar precios
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: python scripts/fetch_prices.py
+
+      - name: Guardar cambios
+        run: |
+          git config user.name "portfolio-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/prices.json data/history.json data/isin_map.json
+          git diff --quiet --cached || git commit -m "Actualizar precios $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push

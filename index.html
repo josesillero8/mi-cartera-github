@@ -1,0 +1,980 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#12181B;
+    --navy-2:#1A2226;
+    --paper:#F5F0E6;
+    --paper-2:#EFE8D8;
+    --line:#D8CFB8;
+    --ink:#221E18;
+    --muted:#8B8378;
+    --brass:#B08D57;
+    --brass-dim:#8f7346;
+    --gain:#4F7A5C;
+    --gain-bg:#E4EDE2;
+    --loss:#A24B3A;
+    --loss-bg:#F3E2DC;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  #app{
+    background:var(--navy);
+    background-image:radial-gradient(circle at 20% 10%, #1c2529 0%, var(--navy) 55%);
+    min-height:100%;
+    padding:32px 16px 60px;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+  }
+  .ledger{
+    max-width:920px;
+    margin:0 auto;
+    background:var(--paper);
+    border-radius:6px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(176,141,87,0.15);
+    overflow:hidden;
+  }
+  .ledger-header{
+    padding:36px 40px 26px;
+    border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--brass-dim);
+    margin:0 0 8px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-style:italic;
+    font-size:34px;
+    margin:0 0 6px;
+    color:var(--ink);
+  }
+  .sub{
+    font-size:14px;
+    color:var(--muted);
+    margin:0;
+  }
+  .sync-status{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--brass-dim);
+    margin:10px 0 0;
+  }
+  .sync-status.offline{color:var(--muted);}
+  .sync-status .dot-live{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--gain);margin-right:6px;
+  }
+  .portfolio-chart{
+    padding:4px 40px 22px;
+    border-bottom:1px solid var(--line);
+  }
+  .portfolio-chart-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 8px;
+  }
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    border-bottom:1px solid var(--line);
+  }
+  .stat{
+    padding:20px 24px;
+    border-right:1px solid var(--line);
+  }
+  .stat:last-child{border-right:none;}
+  .stat-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 6px;
+  }
+  .stat-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:20px;
+    font-weight:600;
+    margin:0;
+  }
+  .stat-value.gain{color:var(--gain);}
+  .stat-value.loss{color:var(--loss);}
+
+  .allocation{
+    padding:20px 40px 24px;
+    border-bottom:1px solid var(--line);
+  }
+  .allocation-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 10px;
+  }
+  .alloc-bar{
+    display:flex;
+    height:14px;
+    border-radius:3px;
+    overflow:hidden;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+  }
+  .alloc-seg{height:100%;}
+  .alloc-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-top:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .alloc-legend span.dot{
+    display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;
+  }
+
+  .form-section{
+    padding:26px 40px 30px;
+    border-bottom:1px solid var(--line);
+    background:var(--paper-2);
+  }
+  .form-title{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-size:18px;
+    margin:0 0 16px;
+  }
+  .mode-toggle{
+    display:flex;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .mode-btn{
+    padding:7px 14px;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:20px;
+    font-family:'Inter',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--muted);
+    cursor:pointer;
+  }
+  .mode-btn.active{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+  .empty-isin-note{
+    font-size:12.5px;
+    color:var(--muted);
+    font-style:italic;
+    margin:4px 0 0;
+  }
+  form{
+    display:grid;
+    grid-template-columns:1.4fr 1fr 0.8fr 0.9fr 0.8fr auto;
+    gap:10px;
+    align-items:end;
+  }
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:5px;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#fff;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus{outline:none;border-color:var(--brass);}
+  button.add-btn{
+    padding:10px 18px;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:3px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  button.add-btn:hover{background:#3a342a;}
+  .form-error{
+    grid-column:1/-1;
+    color:var(--loss);
+    font-size:12px;
+    margin-top:4px;
+  }
+
+  .bulk-hint{
+    font-size:12.5px;
+    color:var(--muted);
+    margin:0 0 8px;
+    line-height:1.5;
+  }
+  .bulk-format{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--brass-dim);
+    margin:0 0 10px;
+  }
+  .bulk-format code{
+    background:var(--paper);
+    padding:2px 6px;
+    border-radius:3px;
+    border:1px solid var(--line);
+  }
+  #bulk-input{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#fff;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    resize:vertical;
+    color:var(--ink);
+  }
+  #bulk-input:focus{outline:none;border-color:var(--brass);}
+  .bulk-actions{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:10px;
+  }
+  #bulk-feedback{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+  }
+  #bulk-feedback.ok{color:var(--gain);}
+  #bulk-feedback.err{color:var(--loss);}
+
+  .positions{padding:28px 40px 40px;}
+  .positions-title{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 18px;
+  }
+  .empty{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--muted);
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-size:16px;
+  }
+
+  .card{
+    border:1px solid var(--line);
+    border-radius:4px;
+    margin-bottom:14px;
+    background:#fff;
+    overflow:hidden;
+  }
+  .card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 18px;
+    cursor:pointer;
+    gap:16px;
+  }
+  .card-head:hover{background:#faf8f3;}
+  .ticker-block{display:flex;align-items:baseline;gap:10px;min-width:0;}
+  .ticker-name{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:18px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .ticker-meta{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .card-metrics{
+    display:flex;
+    align-items:center;
+    gap:22px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .metric{text-align:right;}
+  .metric-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;}
+  .metric-value{font-size:13px;font-weight:600;}
+  .price-input{
+    width:80px;
+    padding:6px 8px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    text-align:right;
+  }
+  .price-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+  .price-source{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);}
+  .price-source.auto{color:var(--gain);}
+  .spark{display:block;}
+  .seal{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:12px;
+    padding:6px 10px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  .seal.gain{background:var(--gain-bg);color:var(--gain);}
+  .seal.loss{background:var(--loss-bg);color:var(--loss);}
+  .chevron{color:var(--muted);font-size:12px;transition:transform 0.15s;}
+  .card.open .chevron{transform:rotate(90deg);}
+
+  .card-body{
+    display:none;
+    border-top:1px solid var(--line);
+    background:#fcfaf5;
+  }
+  .card.open .card-body{display:block;}
+  table.ops{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  table.ops th{
+    text-align:right;
+    padding:8px 18px;
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--muted);
+    border-bottom:1px solid var(--line);
+  }
+  table.ops th:first-child, table.ops td:first-child{text-align:left;}
+  table.ops td{padding:8px 18px;border-bottom:1px solid #ece5d3;text-align:right;}
+  table.ops tr:last-child td{border-bottom:none;}
+  .del-btn{
+    background:none;border:none;color:var(--loss);cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;
+    padding:2px 6px;
+  }
+  .del-btn:hover{opacity:0.6;}
+
+  @media (max-width:720px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .stat:nth-child(2){border-right:none;}
+    form{grid-template-columns:1fr 1fr;}
+    .card-metrics{flex-wrap:wrap;gap:12px;justify-content:flex-end;}
+  }
+</style>
+
+<div id="app">
+  <div class="ledger">
+    <div class="ledger-header">
+      <p class="eyebrow">Control de cartera &middot; manual</p>
+      <h1>Mi cartera</h1>
+      <p class="sub">Cada operación que registres aquí queda guardada. Los precios se actualizan solos si esta página está desplegada con su flujo automático.</p>
+      <p class="sync-status" id="sync-status"></p>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <p class="stat-label">Invertido total</p>
+        <p class="stat-value" id="stat-invested">—</p>
+      </div>
+      <div class="stat">
+        <p class="stat-label">Valor actual</p>
+        <p class="stat-value" id="stat-value">—</p>
+      </div>
+      <div class="stat">
+        <p class="stat-label">Resultado</p>
+        <p class="stat-value" id="stat-pnl">—</p>
+      </div>
+      <div class="stat">
+        <p class="stat-label">Posiciones</p>
+        <p class="stat-value" id="stat-count">—</p>
+      </div>
+    </div>
+
+    <div class="allocation" id="allocation-wrap" style="display:none;">
+      <p class="allocation-label">Reparto del capital invertido</p>
+      <div class="alloc-bar" id="alloc-bar"></div>
+      <div class="alloc-legend" id="alloc-legend"></div>
+    </div>
+
+    <div class="portfolio-chart" id="portfolio-chart-wrap" style="display:none;">
+      <p class="portfolio-chart-label">Evolución del valor de la cartera</p>
+      <div id="portfolio-chart"></div>
+    </div>
+
+    <div class="form-section">
+      <p class="form-title">Añadir operación</p>
+      <div class="mode-toggle">
+        <button type="button" class="mode-btn active" id="mode-new-btn">Acción nueva</button>
+        <button type="button" class="mode-btn" id="mode-existing-btn">Ya tengo esta acción</button>
+      </div>
+
+      <form id="txn-form-new">
+        <div class="field">
+          <label>Nombre</label>
+          <input type="text" id="fn-ticker" placeholder="Ej. Inditex" required>
+        </div>
+        <div class="field">
+          <label>ISIN</label>
+          <input type="text" id="fn-isin" placeholder="Ej. ES0148396007" maxlength="12" required style="text-transform:uppercase;">
+        </div>
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="fn-date" required>
+        </div>
+        <div class="field">
+          <label>Nº acciones</label>
+          <input type="number" id="fn-shares" step="any" min="0" placeholder="0" required>
+        </div>
+        <div class="field">
+          <label>Precio compra (€)</label>
+          <input type="number" id="fn-price" step="any" min="0" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label>Comisión (€)</label>
+          <input type="number" id="fn-commission" step="any" min="0" placeholder="0.00" value="0">
+        </div>
+        <button type="submit" class="add-btn">Añadir</button>
+        <div class="form-error" id="form-error-new" style="display:none;"></div>
+      </form>
+
+      <form id="txn-form-existing" style="display:none;">
+        <div class="field" style="grid-column:1/3;">
+          <label>Acción (por ISIN)</label>
+          <select id="fe-isin" required></select>
+        </div>
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="fe-date" required>
+        </div>
+        <div class="field">
+          <label>Nº acciones</label>
+          <input type="number" id="fe-shares" step="any" min="0" placeholder="0" required>
+        </div>
+        <div class="field">
+          <label>Precio compra (€)</label>
+          <input type="number" id="fe-price" step="any" min="0" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label>Comisión (€)</label>
+          <input type="number" id="fe-commission" step="any" min="0" placeholder="0.00" value="0">
+        </div>
+        <button type="submit" class="add-btn">Añadir</button>
+        <div class="form-error" id="form-error-existing" style="display:none;"></div>
+      </form>
+      <p class="empty-isin-note" id="empty-isin-note" style="display:none;">Todavía no tienes ninguna acción registrada con ISIN. Usa "Acción nueva" primero.</p>
+    </div>
+
+    <div class="form-section" id="bulk-section">
+      <p class="form-title">Cargar posiciones que ya tienes abiertas</p>
+      <p class="bulk-hint">Ideal si no llevas el detalle de cada compra: pon una línea por acción con <strong>lo que tienes ahora mismo</strong>. Se registrará como una operación única con el nº de acciones y el precio medio que indiques. El ISIN es opcional aquí, pero te lo recomiendo para que los precios automáticos enlacen bien.</p>
+      <p class="bulk-format">Formato por línea: <code>Nombre; nº de acciones; precio medio de compra; ISIN (opcional)</code></p>
+      <textarea id="bulk-input" rows="4" placeholder="Inditex; 12; 34.50; ES0148396007
+Iberdrola; 40; 11.20; ES0144580Y14
+S&amp;P 500 ETF; 5.5; 92.10"></textarea>
+      <div class="bulk-actions">
+        <button type="button" class="add-btn" id="bulk-import-btn">Importar posiciones</button>
+        <span id="bulk-feedback"></span>
+      </div>
+    </div>
+
+    <div class="positions">
+      <p class="positions-title">Posiciones</p>
+      <div id="positions-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const PALETTE = ['#B08D57','#4F7A5C','#8B8378','#A24B3A','#6B8FA0','#9B7BAA','#C9A24B','#5C7A99'];
+  let state = { transactions: [], currentPrices: {} };
+  let openCards = new Set();
+  let remotePrices = null;      // { label: {symbol, price, updated, ...} }
+  let remoteHistory = null;     // { points: [{timestamp, prices:{label:price}}] }
+
+  async function fetchRemoteData(){
+    try{
+      const [pRes, hRes] = await Promise.all([
+        fetch('./data/prices.json', {cache:'no-store'}),
+        fetch('./data/history.json', {cache:'no-store'})
+      ]);
+      if(pRes.ok) remotePrices = await pRes.json();
+      if(hRes.ok) remoteHistory = await hRes.json();
+    }catch(e){
+      remotePrices = null;
+      remoteHistory = null;
+    }
+    updateSyncStatus();
+  }
+
+  function updateSyncStatus(){
+    const el = document.getElementById('sync-status');
+    if(remotePrices && Object.keys(remotePrices).length){
+      const times = Object.values(remotePrices).map(p=>new Date(p.updated).getTime()).filter(Boolean);
+      const latest = times.length ? new Date(Math.max(...times)) : null;
+      const mins = latest ? Math.max(0, Math.round((Date.now()-latest.getTime())/60000)) : null;
+      el.innerHTML = '<span class="dot-live"></span>Precios automáticos activos' + (mins!==null ? ' · última actualización hace '+mins+' min' : '');
+      el.className = 'sync-status';
+    } else {
+      el.textContent = 'Sin conexión a precios automáticos — introduce los precios manualmente abajo.';
+      el.className = 'sync-status offline';
+    }
+  }
+
+  function remotePriceFor(isin){
+    if(!remotePrices || !isin) return null;
+    return remotePrices[isin.toUpperCase()] || null;
+  }
+
+  function sparklinePath(values, w, h, pad){
+    if(values.length < 2) return null;
+    const min = Math.min(...values), max = Math.max(...values);
+    const range = (max-min) || 1;
+    const step = (w-pad*2) / (values.length-1);
+    return values.map((v,i)=>{
+      const x = pad + i*step;
+      const y = pad + (h-pad*2) * (1 - (v-min)/range);
+      return (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+  }
+
+  function renderSparkline(values, color){
+    const w=90,h=30,pad=3;
+    const path = sparklinePath(values,w,h,pad);
+    if(!path) return '';
+    const rising = values[values.length-1] >= values[0];
+    return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  function renderPortfolioChart(positions){
+    const wrap = document.getElementById('portfolio-chart-wrap');
+    const holder = document.getElementById('portfolio-chart');
+    if(!remoteHistory || !remoteHistory.points || remoteHistory.points.length < 2 || positions.length===0){
+      wrap.style.display='none';
+      return;
+    }
+    const sharesByIsin = {};
+    positions.forEach(p=>{ if(p.isin) sharesByIsin[p.isin] = p.totalShares; });
+
+    const series = remoteHistory.points.map(pt=>{
+      let total = 0, any=false;
+      Object.entries(pt.prices||{}).forEach(([isin, price])=>{
+        const shares = sharesByIsin[isin];
+        if(shares && typeof price === 'number'){ total += shares*price; any=true; }
+      });
+      return any ? total : null;
+    }).filter(v=>v!==null);
+
+    if(series.length < 2){ wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    const w=800,h=90,pad=8;
+    const path = sparklinePath(series,w,h,pad);
+    const rising = series[series.length-1] >= series[0];
+    holder.innerHTML = `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <path d="${path}" fill="none" stroke="${rising?'#4F7A5C':'#A24B3A'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  const fmtMoney = n => (isFinite(n)?n:0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
+  const fmtPct = n => (isFinite(n)?n:0).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+  const fmtNum = n => (isFinite(n)?n:0).toLocaleString('es-ES',{maximumFractionDigits:4});
+  const fmtDate = d => { try { return new Date(d+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return d; } };
+
+  async function loadState(){
+    try{
+      const res = await window.storage.get('portfolio-data', false);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        state.transactions = parsed.transactions || [];
+        state.currentPrices = parsed.currentPrices || {};
+      }
+    }catch(e){ /* no data yet */ }
+    await fetchRemoteData();
+    render();
+    setInterval(async ()=>{ await fetchRemoteData(); render(); }, 5*60*1000);
+  }
+
+  async function saveState(){
+    try{
+      await window.storage.set('portfolio-data', JSON.stringify(state), false);
+    }catch(e){ console.error('Error guardando', e); }
+  }
+
+  function getPositions(){
+    const map = {};
+    state.transactions.forEach(t=>{
+      const key = (t.isin && t.isin.trim()) ? t.isin.trim().toUpperCase() : ('noisin:'+t.ticker.trim().toLowerCase());
+      if(!map[key]) map[key] = { display: t.ticker.trim(), isin: t.isin ? t.isin.trim().toUpperCase() : '', ops: [] };
+      map[key].ops.push(t);
+    });
+    return Object.entries(map).map(([key,data])=>{
+      const ops = data.ops.sort((a,b)=> a.date.localeCompare(b.date));
+      const totalShares = ops.reduce((s,o)=>s+o.shares,0);
+      const totalCost = ops.reduce((s,o)=>s+o.shares*o.price+o.commission,0);
+      const avgPrice = totalShares>0 ? totalCost/totalShares : 0;
+      const remote = data.isin ? remotePriceFor(data.isin) : null;
+      const manualPrice = state.currentPrices[key];
+      const hasManual = manualPrice !== undefined && manualPrice !== null && manualPrice !== '';
+      const currentPrice = remote ? remote.price : (hasManual ? Number(manualPrice) : undefined);
+      const isAuto = !!remote;
+      const hasPrice = currentPrice !== undefined && currentPrice !== null && !isNaN(currentPrice);
+      const currentValue = hasPrice ? totalShares*Number(currentPrice) : null;
+      const pnl = hasPrice ? currentValue-totalCost : null;
+      const pnlPct = hasPrice && totalCost>0 ? (pnl/totalCost)*100 : null;
+      return { key, name:data.display, isin:data.isin, ops, totalShares, totalCost, avgPrice, currentPrice, hasPrice, isAuto, currentValue, pnl, pnlPct };
+    }).sort((a,b)=> b.totalCost - a.totalCost);
+  }
+
+  function allKnownIsins(){
+    const map = {};
+    state.transactions.forEach(t=>{
+      if(t.isin && t.isin.trim()){
+        const isin = t.isin.trim().toUpperCase();
+        if(!map[isin]) map[isin] = t.ticker.trim();
+      }
+    });
+    return map;
+  }
+
+  function render(){
+    const positions = getPositions();
+    const totalInvested = positions.reduce((s,p)=>s+p.totalCost,0);
+    const positionsWithPrice = positions.filter(p=>p.hasPrice);
+    const totalValue = positionsWithPrice.reduce((s,p)=>s+p.currentValue,0) + positions.filter(p=>!p.hasPrice).reduce((s,p)=>s+p.totalCost,0);
+    const totalPnl = positionsWithPrice.reduce((s,p)=>s+p.pnl,0);
+    const allHavePrice = positions.length>0 && positionsWithPrice.length===positions.length;
+
+    document.getElementById('stat-invested').textContent = fmtMoney(totalInvested);
+    document.getElementById('stat-value').textContent = positions.length ? fmtMoney(totalValue) : '—';
+    const pnlEl = document.getElementById('stat-pnl');
+    if(allHavePrice){
+      const pct = totalInvested>0 ? (totalPnl/totalInvested)*100 : 0;
+      pnlEl.textContent = (totalPnl>=0?'+':'') + fmtMoney(totalPnl) + '  (' + (totalPnl>=0?'+':'') + fmtPct(pct) + ')';
+      pnlEl.className = 'stat-value ' + (totalPnl>=0?'gain':'loss');
+    } else if(positions.length) {
+      pnlEl.textContent = 'Falta precio';
+      pnlEl.className = 'stat-value';
+    } else {
+      pnlEl.textContent = '—';
+      pnlEl.className = 'stat-value';
+    }
+    document.getElementById('stat-count').textContent = positions.length;
+
+    renderPortfolioChart(positions);
+
+    const allocWrap = document.getElementById('allocation-wrap');
+    if(positions.length){
+      allocWrap.style.display = 'block';
+      const bar = document.getElementById('alloc-bar');
+      const legend = document.getElementById('alloc-legend');
+      bar.innerHTML=''; legend.innerHTML='';
+      positions.forEach((p,i)=>{
+        const pct = totalInvested>0 ? (p.totalCost/totalInvested)*100 : 0;
+        const color = PALETTE[i % PALETTE.length];
+        const seg = document.createElement('div');
+        seg.className='alloc-seg';
+        seg.style.width = pct+'%';
+        seg.style.background = color;
+        seg.title = p.name+': '+fmtPct(pct);
+        bar.appendChild(seg);
+        const item = document.createElement('div');
+        item.innerHTML = '<span class="dot" style="background:'+color+'"></span>'+p.name+' · '+fmtPct(pct);
+        legend.appendChild(item);
+      });
+    } else {
+      allocWrap.style.display='none';
+    }
+
+    const list = document.getElementById('positions-list');
+    list.innerHTML='';
+    if(positions.length===0){
+      list.innerHTML = '<div class="empty">Todavía no has añadido ninguna operación.<br>Empieza registrando tu primera compra arriba.</div>';
+      return;
+    }
+
+    positions.forEach(p=>{
+      const card = document.createElement('div');
+      card.className = 'card' + (openCards.has(p.key) ? ' open' : '');
+
+      const head = document.createElement('div');
+      head.className='card-head';
+      head.onclick = ()=>{ 
+        if(openCards.has(p.key)) openCards.delete(p.key); else openCards.add(p.key);
+        render();
+      };
+
+      const seal = p.hasPrice
+        ? '<span class="seal '+(p.pnl>=0?'gain':'loss')+'">'+(p.pnl>=0?'+':'')+fmtPct(p.pnlPct)+'</span>'
+        : '<span class="seal" style="background:#eee;color:#999;">sin precio</span>';
+
+      const sparkValues = p.isin ? (remoteHistory && remoteHistory.points || [])
+        .map(pt => pt.prices && pt.prices[p.isin])
+        .filter(v => typeof v === 'number') : [];
+      const sparkColor = p.hasPrice ? (p.pnl>=0?'#4F7A5C':'#A24B3A') : '#8B8378';
+      const sparkHtml = sparkValues.length>=2 ? renderSparkline(sparkValues.slice(-40), sparkColor) : '';
+
+      head.innerHTML = `
+        <div class="ticker-block">
+          <span class="ticker-name">${escapeHtml(p.name)}</span>
+          <span class="ticker-meta">${p.isin ? p.isin+' · ' : ''}${p.ops.length} operaci${p.ops.length===1?'ón':'ones'} · ${fmtNum(p.totalShares)} acc.</span>
+        </div>
+        ${sparkHtml}
+        <div class="card-metrics">
+          <div class="metric">
+            <div class="metric-label">Precio medio</div>
+            <div class="metric-value">${fmtMoney(p.avgPrice)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Invertido</div>
+            <div class="metric-value">${fmtMoney(p.totalCost)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Precio actual</div>
+            <div class="price-wrap">
+              <input class="price-input" type="number" step="any" min="0" placeholder="—" value="${p.hasPrice?p.currentPrice:''}" data-key="${p.key}" ${p.isAuto?'disabled':''}>
+              <span class="price-source ${p.isAuto?'auto':''}">${p.isAuto?'⚡ auto':'manual'}</span>
+            </div>
+          </div>
+          ${seal}
+          <span class="chevron">&#9656;</span>
+        </div>
+      `;
+      head.querySelector('.price-input').addEventListener('click', e=>e.stopPropagation());
+      head.querySelector('.price-input').addEventListener('change', async e=>{
+        const val = e.target.value;
+        state.currentPrices[p.key] = val === '' ? undefined : Number(val);
+        await saveState();
+        render();
+      });
+
+      const body = document.createElement('div');
+      body.className='card-body';
+      let rows = p.ops.map(o=>`
+        <tr>
+          <td>${fmtDate(o.date)}</td>
+          <td>${fmtNum(o.shares)}</td>
+          <td>${fmtMoney(o.price)}</td>
+          <td>${fmtMoney(o.commission)}</td>
+          <td>${fmtMoney(o.shares*o.price+o.commission)}</td>
+          <td><button class="del-btn" data-id="${o.id}" title="Eliminar">&times;</button></td>
+        </tr>
+      `).join('');
+      body.innerHTML = `
+        <table class="ops">
+          <thead><tr><th>Fecha</th><th>Acciones</th><th>Precio</th><th>Comisión</th><th>Total</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+      body.querySelectorAll('.del-btn').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          state.transactions = state.transactions.filter(t=>t.id!==btn.dataset.id);
+          await saveState();
+          render();
+        });
+      });
+
+      card.appendChild(head);
+      card.appendChild(body);
+      list.appendChild(card);
+    });
+    if(document.getElementById('fe-isin')) refreshIsinSelect();
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function refreshIsinSelect(){
+    const select = document.getElementById('fe-isin');
+    const known = allKnownIsins();
+    const entries = Object.entries(known);
+    const note = document.getElementById('empty-isin-note');
+    const existingForm = document.getElementById('txn-form-existing');
+    if(entries.length === 0){
+      select.innerHTML = '';
+      note.style.display = 'block';
+      existingForm.style.display = 'none';
+    } else {
+      select.innerHTML = entries.map(([isin,name])=>`<option value="${isin}">${escapeHtml(name)} · ${isin}</option>`).join('');
+      note.style.display = 'none';
+    }
+  }
+
+  const modeNewBtn = document.getElementById('mode-new-btn');
+  const modeExistingBtn = document.getElementById('mode-existing-btn');
+  const formNew = document.getElementById('txn-form-new');
+  const formExisting = document.getElementById('txn-form-existing');
+
+  modeNewBtn.addEventListener('click', ()=>{
+    modeNewBtn.classList.add('active');
+    modeExistingBtn.classList.remove('active');
+    formNew.style.display = 'grid';
+    refreshIsinSelect();
+    formExisting.style.display = 'none';
+  });
+  modeExistingBtn.addEventListener('click', ()=>{
+    modeExistingBtn.classList.add('active');
+    modeNewBtn.classList.remove('active');
+    refreshIsinSelect();
+    formNew.style.display = 'none';
+    if(document.getElementById('fe-isin').options.length > 0){
+      formExisting.style.display = 'grid';
+    }
+  });
+
+  document.getElementById('txn-form-new').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const errorEl = document.getElementById('form-error-new');
+    errorEl.style.display='none';
+    const ticker = document.getElementById('fn-ticker').value.trim();
+    const isin = document.getElementById('fn-isin').value.trim().toUpperCase();
+    const date = document.getElementById('fn-date').value;
+    const shares = Number(document.getElementById('fn-shares').value);
+    const price = Number(document.getElementById('fn-price').value);
+    const commission = Number(document.getElementById('fn-commission').value || 0);
+
+    if(!ticker || !isin || !date || !(shares>0) || !(price>0)){
+      errorEl.textContent = 'Revisa los campos: nombre, ISIN, fecha, nº de acciones y precio son obligatorios.';
+      errorEl.style.display='block';
+      return;
+    }
+    if(!/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){
+      errorEl.textContent = 'Ese ISIN no tiene el formato correcto (12 caracteres, ej. ES0148396007).';
+      errorEl.style.display='block';
+      return;
+    }
+    const existingIsins = allKnownIsins();
+    if(existingIsins[isin]){
+      errorEl.textContent = `Ese ISIN ya está registrado como "${existingIsins[isin]}". Usa la pestaña "Ya tengo esta acción" para añadir otra compra.`;
+      errorEl.style.display='block';
+      return;
+    }
+
+    state.transactions.push({
+      id: Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+      ticker, isin, date, shares, price, commission
+    });
+    await saveState();
+    e.target.reset();
+    document.getElementById('fn-commission').value = 0;
+    document.getElementById('fn-date').valueAsDate = new Date();
+    render();
+  });
+
+  document.getElementById('txn-form-existing').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const errorEl = document.getElementById('form-error-existing');
+    errorEl.style.display='none';
+    const isin = document.getElementById('fe-isin').value;
+    const known = allKnownIsins();
+    const ticker = known[isin];
+    const date = document.getElementById('fe-date').value;
+    const shares = Number(document.getElementById('fe-shares').value);
+    const price = Number(document.getElementById('fe-price').value);
+    const commission = Number(document.getElementById('fe-commission').value || 0);
+
+    if(!isin || !ticker || !date || !(shares>0) || !(price>0)){
+      errorEl.textContent = 'Revisa los campos: fecha, nº de acciones y precio son obligatorios.';
+      errorEl.style.display='block';
+      return;
+    }
+
+    state.transactions.push({
+      id: Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+      ticker, isin, date, shares, price, commission
+    });
+    await saveState();
+    e.target.reset();
+    document.getElementById('fe-commission').value = 0;
+    document.getElementById('fe-date').valueAsDate = new Date();
+    render();
+  });
+
+  document.getElementById('fn-date').valueAsDate = new Date();
+  document.getElementById('fe-date').valueAsDate = new Date();
+  refreshIsinSelect();
+
+  document.getElementById('bulk-import-btn').addEventListener('click', async ()=>{
+    const feedback = document.getElementById('bulk-feedback');
+    const raw = document.getElementById('bulk-input').value;
+    const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lines.length===0){
+      feedback.textContent = 'Escribe al menos una línea.';
+      feedback.className = 'err';
+      return;
+    }
+    const today = new Date().toISOString().slice(0,10);
+    let imported = 0;
+    let errors = [];
+    lines.forEach((line, idx)=>{
+      const parts = line.split(';').map(p=>p.trim());
+      if(parts.length !== 3 && parts.length !== 4){
+        errors.push('Línea '+(idx+1)+': usa el formato Nombre; nº acciones; precio medio; ISIN (opcional)');
+        return;
+      }
+      const [ticker, sharesStr, priceStr, isinRaw] = parts;
+      const shares = Number(sharesStr.replace(',', '.'));
+      const price = Number(priceStr.replace(',', '.'));
+      const isin = (isinRaw || '').toUpperCase();
+      if(!ticker || !(shares>0) || !(price>0)){
+        errors.push('Línea '+(idx+1)+': revisa nombre, nº de acciones y precio');
+        return;
+      }
+      if(isin && !/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){
+        errors.push('Línea '+(idx+1)+': el ISIN "'+isin+'" no tiene el formato correcto, se importó sin ISIN');
+      }
+      const validIsin = isin && /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin) ? isin : undefined;
+      state.transactions.push({
+        id: Date.now().toString(36)+Math.random().toString(36).slice(2,7)+idx,
+        ticker, isin: validIsin, date: today, shares, price, commission: 0
+      });
+      imported++;
+    });
+    if(imported>0){
+      await saveState();
+      render();
+    }
+    if(errors.length===0){
+      feedback.textContent = imported+' posición'+(imported===1?'':'es')+' importada'+(imported===1?'':'s')+' correctamente.';
+      feedback.className = 'ok';
+      document.getElementById('bulk-input').value = '';
+    } else {
+      feedback.textContent = imported+' importadas, '+errors.length+' con error: '+errors.join(' | ');
+      feedback.className = 'err';
+    }
+  });
+
+  loadState();
+})();
+</script>

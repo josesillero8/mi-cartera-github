@@ -1,0 +1,14 @@
+{
+  "_comentario": "Cada acción lleva su ISIN y, cuando cotiza en varias bolsas, el 'symbol' exacto que quieres usar (así no hay ambigüedad de mercado/divisa). Si algún día añades una acción con un solo mercado posible, puedes omitir 'symbol' y se resuelve solo.",
+  "tickers": [
+    { "isin": "IE00B5BMR087", "symbol": "SXR8.DE", "label": "iShares Core S&P 500 UCITS ETF" },
+    { "isin": "IE00B4ND3602", "symbol": "PPFB.SG", "label": "iShares Physical Gold ETC" },
+    { "isin": "US90353T1007", "symbol": "UBER", "label": "Uber Technologies" },
+    { "isin": "IE00B8HGT870", "symbol": "3GOL.L", "label": "WisdomTree Gold 3x Daily Leveraged" },
+    { "isin": "DK0062498333", "symbol": "NOV.DE", "label": "Novo Nordisk A/S" },
+    { "isin": "IE00B4NCWG09", "symbol": "ISLN.L", "label": "iShares Physical Silver ETC" },
+    { "isin": "NL0009434992", "symbol": "LYB", "label": "LyondellBasell Industries" },
+    { "isin": "ES0157261019", "symbol": "ROVI.MC", "label": "Laboratorios Rovi" },
+    { "isin": "KYG017191142", "symbol": "2RR.F", "label": "Alibaba Group Holding" }
+  ]
+}
