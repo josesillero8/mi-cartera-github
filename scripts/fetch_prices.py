@@ -110,7 +110,7 @@ if not symbol_to_isins:
     sys.exit(1)
 
 symbols = ",".join(symbol_to_isins.keys())
-quote_url = f"https://financialmodelingprep.com/api/v3/quote/{symbols}?apikey={API_KEY}"
+quote_url = f"https://financialmodelingprep.com/stable/batch-quote?symbols={symbols}&apikey={API_KEY}"
 try:
     quotes = fetch_json(quote_url)
 except urllib.error.URLError as ex:
@@ -136,7 +136,7 @@ for symbol, isin_list in symbol_to_isins.items():
             "companyName": isin_map[isin].get("companyName"),
             "price": price,
             "change": q.get("change"),
-            "changesPercentage": q.get("changesPercentage"),
+            "changesPercentage": q.get("changePercentage"),
             "updated": now_iso,
         }
         snapshot[isin] = price
