@@ -414,8 +414,8 @@
   async function fetchRemoteData(){
     try{
       const [pRes, hRes] = await Promise.all([
-        fetch('./data/prices.json', {cache:'no-store'}),
-        fetch('./data/history.json', {cache:'no-store'})
+        fetch('./data/prices.json?t=' + Date.now(), {cache:'no-store'}),
+        fetch('./data/history.json?t=' + Date.now(), {cache:'no-store'})
       ]);
       if(pRes.ok) remotePrices = await pRes.json();
       if(hRes.ok) remoteHistory = await hRes.json();
