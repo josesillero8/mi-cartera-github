@@ -100,11 +100,11 @@
   .nav-item.active{color:var(--purple);}
 
   .fab{
-    position:fixed;left:50%;bottom:74px;width:54px;height:54px;border-radius:50%;
+    position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;
     background:var(--purple);color:#fff;border:none;display:flex;align-items:center;justify-content:center;
     font-size:26px;font-weight:400;cursor:pointer;box-shadow:var(--shadow-lg);z-index:25;transition:transform 0.12s ease;
   }
-  .fab:active{transform:translateX(-50%) scale(0.92);}
+  .fab:active{transform:scale(0.92);}
 
   /* ===== Accordion ===== */
   .acc-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows 0.28s ease;}
@@ -131,6 +131,20 @@
   .detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
   .detail-item-label{font-size:10.5px;color:var(--text-faint);margin-bottom:5px;font-weight:500;}
   .detail-item-value{font-size:13.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+
+  .ops-list{margin-top:16px;}
+  .ops-list-label{font-size:10.5px;color:var(--text-faint);margin:0 0 8px;font-weight:500;}
+  .op-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--border);}
+  .op-row:first-of-type{border-top:none;}
+  .op-badge{font-size:9.5px;font-weight:700;padding:3px 7px;border-radius:8px;flex-shrink:0;}
+  .op-badge.buy{color:var(--purple);background:var(--purple-soft);}
+  .op-badge.sell{color:var(--red);background:var(--red-soft);}
+  .op-badge.div{color:var(--green);background:var(--green-soft);}
+  .op-info{flex:1;min-width:0;font-size:11.5px;color:var(--text-dim);}
+  .op-info b{color:var(--text);font-weight:700;}
+  .op-actions{display:flex;gap:2px;flex-shrink:0;}
+  .op-icon-btn{width:26px;height:26px;border:none;background:var(--card-alt);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .op-icon-btn:active{background:var(--purple-soft);color:var(--purple);}
 
   /* Evolucion */
   .evo-toggle{display:flex;gap:8px;margin-bottom:16px;background:var(--card-alt);padding:4px;border-radius:14px;width:fit-content;}
@@ -220,7 +234,7 @@
   #bulk-feedback.ok{color:var(--green);}
   #bulk-feedback.err{color:var(--red);}
 
-  @media (min-width:540px){ .fab{left:calc(50% + 200px);} }
+  @media (min-width:540px){ .fab{right:calc(50vw - 240px + 18px);} }
 </style>
 
 <div id="app">
@@ -331,6 +345,18 @@
       </div>
     </div>
   </div>
+
+  <div class="sheet-overlay" id="edit-overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><h2 id="edit-sheet-title">Editar</h2><button class="sheet-close" id="edit-close-btn">&times;</button></div>
+      <div class="sheet-body">
+        <form id="edit-form"></form>
+        <div class="form-error" id="edit-form-error" style="display:none;"></div>
+        <button type="button" class="add-btn" id="edit-delete-btn" style="background:none;color:var(--red);border:1.5px solid var(--red-soft);box-shadow:none;margin-top:10px;">Eliminar esta operación</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -350,6 +376,7 @@
   const fmtMoney = n => (isFinite(n)?n:0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
   const fmtPct = n => (isFinite(n)?n:0).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
   const fmtNum = n => (isFinite(n)?n:0).toLocaleString('es-ES',{maximumFractionDigits:4});
+  const fmtDate = d => { try { return new Date(d+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return d; } };
   const escapeHtml = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
   const colorFor = key => PALETTE[Math.abs(hashCode(key)) % PALETTE.length];
   function hashCode(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return h; }
@@ -629,6 +656,27 @@
               <div><div class="detail-item-label">Operaciones</div><div class="detail-item-value">${p.ops.length}</div></div>
             </div>
             ${hasWash?`<p style="color:var(--red);font-size:11.5px;font-weight:600;margin:12px 0 0;">⚠ Alguna venta con pérdidas de esta acción tiene una compra a menos de 2 meses — revisa la regla de los 2 meses antes de declarar.</p>`:''}
+            <div class="ops-list">
+              <p class="ops-list-label">Tus operaciones — toca ✎ para corregir un dato</p>
+              ${p.ops.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(o=>`
+                <div class="op-row">
+                  <span class="op-badge ${o.type==='sell'?'sell':'buy'}">${o.type==='sell'?'Venta':'Compra'}</span>
+                  <span class="op-info">${fmtDate(o.date)} · <b>${fmtNum(o.shares)}</b> acc. a <b>${fmtMoney(o.price)}</b></span>
+                  <span class="op-actions">
+                    <button class="op-icon-btn" data-edit-txn="${o.id}">✎</button>
+                  </span>
+                </div>
+              `).join('')}
+              ${(state.dividends||[]).filter(d=>d.isin===p.isin).sort((a,b)=>b.date.localeCompare(a.date)).map(d=>`
+                <div class="op-row">
+                  <span class="op-badge div">Dividendo</span>
+                  <span class="op-info">${fmtDate(d.date)} · <b>${fmtMoney(d.amount)}</b></span>
+                  <span class="op-actions">
+                    <button class="op-icon-btn" data-edit-div="${d.id}">✎</button>
+                  </span>
+                </div>
+              `).join('')}
+            </div>
             <div style="margin-top:14px;">
               <div class="detail-item-label" style="margin-bottom:6px;">Tu tesis / notas</div>
               <textarea class="note-input" data-key="${p.key}" rows="2" placeholder="¿Por qué compraste esta acción? ¿Cuál es tu objetivo?" style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-alt);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;resize:vertical;">${escapeHtml(noteVal)}</textarea>
@@ -646,6 +694,13 @@
       ta.addEventListener('click', e=> e.stopPropagation());
     });
 
+    wrap.querySelectorAll('[data-edit-txn]').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation(); openEditTxn(btn.dataset.editTxn); });
+    });
+    wrap.querySelectorAll('[data-edit-div]').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation(); openEditDiv(btn.dataset.editDiv); });
+    });
+
     wrap.querySelectorAll('.move-head').forEach(head=>{
       head.addEventListener('click', ()=>{
         const key = head.closest('.move-row').dataset.key;
@@ -653,6 +708,90 @@
         renderActiveTab();
       });
     });
+  }
+
+  // ---------- Edit sheet (correct or delete an existing entry) ----------
+  const editOverlay = document.getElementById('edit-overlay');
+  function openEditSheet(){ editOverlay.classList.add('open'); document.body.style.overflow='hidden'; }
+  function closeEditSheet(){ editOverlay.classList.remove('open'); document.body.style.overflow=''; }
+  document.getElementById('edit-close-btn').addEventListener('click', closeEditSheet);
+  editOverlay.addEventListener('click', e=>{ if(e.target===editOverlay) closeEditSheet(); });
+
+  function openEditTxn(id){
+    const txn = state.transactions.find(t=>t.id===id);
+    if(!txn) return;
+    const isSell = txn.type==='sell';
+    document.getElementById('edit-sheet-title').textContent = isSell ? 'Editar venta' : 'Editar compra';
+    document.getElementById('edit-form-error').style.display='none';
+    const form = document.getElementById('edit-form');
+    form.innerHTML = `
+      <div class="field"><label>Fecha</label><input type="date" id="edit-date" value="${txn.date}" required></div>
+      <div class="field"><label>Nº acciones</label><input type="number" id="edit-shares" step="any" min="0" value="${txn.shares}" required></div>
+      <div class="field"><label>${isSell?'Precio venta (€)':'Precio compra (€)'}</label><input type="number" id="edit-price" step="any" min="0" value="${txn.price}" required></div>
+      <div class="field"><label>Comisión (€)</label><input type="number" id="edit-commission" step="any" min="0" value="${txn.commission||0}"></div>
+      <button type="submit" class="add-btn">Guardar cambios</button>
+    `;
+    form.onsubmit = async e=>{
+      e.preventDefault();
+      const errorEl = document.getElementById('edit-form-error');
+      const date = document.getElementById('edit-date').value;
+      const shares = Number(document.getElementById('edit-shares').value);
+      const price = Number(document.getElementById('edit-price').value);
+      const commission = Number(document.getElementById('edit-commission').value || 0);
+      if(!date || !(shares>0) || !(price>0)){
+        errorEl.textContent = 'Revisa fecha, nº de acciones y precio.'; errorEl.style.display='block'; return;
+      }
+      if(isSell){
+        const heldExcluding = sharesHeldFor(txn.isin) + txn.shares; // add back this sale's shares before checking new amount
+        if(shares > heldExcluding){
+          errorEl.textContent = `No puedes vender más de ${fmtNum(heldExcluding)} acciones.`; errorEl.style.display='block'; return;
+        }
+      }
+      txn.date = date; txn.shares = shares; txn.price = price; txn.commission = commission;
+      await saveState();
+      closeEditSheet();
+      render();
+    };
+    document.getElementById('edit-delete-btn').onclick = async ()=>{
+      state.transactions = state.transactions.filter(t=>t.id!==id);
+      await saveState();
+      closeEditSheet();
+      render();
+    };
+    openEditSheet();
+  }
+
+  function openEditDiv(id){
+    const div = (state.dividends||[]).find(d=>d.id===id);
+    if(!div) return;
+    document.getElementById('edit-sheet-title').textContent = 'Editar dividendo';
+    document.getElementById('edit-form-error').style.display='none';
+    const form = document.getElementById('edit-form');
+    form.innerHTML = `
+      <div class="field"><label>Fecha</label><input type="date" id="edit-date" value="${div.date}" required></div>
+      <div class="field"><label>Importe neto (€)</label><input type="number" id="edit-amount" step="any" min="0" value="${div.amount}" required></div>
+      <button type="submit" class="add-btn">Guardar cambios</button>
+    `;
+    form.onsubmit = async e=>{
+      e.preventDefault();
+      const errorEl = document.getElementById('edit-form-error');
+      const date = document.getElementById('edit-date').value;
+      const amount = Number(document.getElementById('edit-amount').value);
+      if(!date || !(amount>0)){
+        errorEl.textContent = 'Revisa fecha e importe.'; errorEl.style.display='block'; return;
+      }
+      div.date = date; div.amount = amount;
+      await saveState();
+      closeEditSheet();
+      render();
+    };
+    document.getElementById('edit-delete-btn').onclick = async ()=>{
+      state.dividends = state.dividends.filter(d=>d.id!==id);
+      await saveState();
+      closeEditSheet();
+      render();
+    };
+    openEditSheet();
   }
 
   function renderEvolucion(positions){
