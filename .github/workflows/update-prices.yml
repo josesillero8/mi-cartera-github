@@ -2,8 +2,11 @@ name: Actualizar precios
 
 on:
   schedule:
-    # Cada 15 minutos, solo en horario de mercado aproximado (7:00-22:00 UTC, L-V)
-    - cron: "*/15 7-22 * * 1-5"
+    # Cada 15 minutos aprox., en horario de mercado (7:00-22:00 UTC, L-V).
+    # Los minutos "7, 22, 37, 52" (en vez de 0, 15, 30, 45) evitan las horas
+    # en punto, que son las que más carga tienen en GitHub y más retrasan
+    # o descartan los workflows programados.
+    - cron: "7,22,37,52 7-22 * * 1-5"
   workflow_dispatch: {}   # te permite lanzarlo manualmente desde GitHub
 
 permissions:
@@ -28,4 +31,5 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add data/prices.json data/history.json
           git diff --quiet --cached || git commit -m "Actualizar precios $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git pull --rebase --autostash origin main
           git push
