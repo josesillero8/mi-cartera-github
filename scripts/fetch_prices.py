@@ -71,7 +71,9 @@ for item in raw_entries:
             "label": item.get("label"),
         })
 
-if not entries:
+benchmarks = config.get("benchmarks", [])
+
+if not entries and not benchmarks:
     print("tickers.json no tiene ninguna acción configurada, nada que hacer.")
     sys.exit(0)
 
@@ -101,11 +103,30 @@ for e in entries:
     snapshot[isin] = q["price"]
     any_ok = True
 
+benchmark_snapshot = {}
+benchmarks_out = load_json(PRICES_PATH.replace("prices.json", "benchmarks.json"), {})
+for b in benchmarks:
+    symbol = b.get("symbol")
+    label = b.get("label") or symbol
+    if not symbol:
+        continue
+    try:
+        q = fetch_yahoo_quote(symbol)
+    except (urllib.error.URLError, ValueError, KeyError, IndexError) as ex:
+        print(f"Aviso: no se pudo obtener precio para el índice {label} ({symbol}): {ex}", file=sys.stderr)
+        continue
+    benchmarks_out[label] = {
+        "symbol": symbol, "price": q["price"], "changesPercentage": q["changesPercentage"],
+        "currency": q["currency"], "updated": now_iso,
+    }
+    benchmark_snapshot[label] = q["price"]
+    any_ok = True
+
 if not any_ok:
-    print("No se pudo obtener el precio de ninguna acción configurada.", file=sys.stderr)
+    print("No se pudo obtener el precio de ninguna acción ni índice configurado.", file=sys.stderr)
     sys.exit(1)
 
-history["points"].append({"timestamp": now_iso, "prices": snapshot})
+history["points"].append({"timestamp": now_iso, "prices": snapshot, "benchmarks": benchmark_snapshot})
 history["points"] = history["points"][-MAX_HISTORY_POINTS:]
 
 os.makedirs(os.path.dirname(PRICES_PATH), exist_ok=True)
@@ -113,5 +134,8 @@ with open(PRICES_PATH, "w", encoding="utf-8") as f:
     json.dump(prices, f, ensure_ascii=False, indent=2)
 with open(HISTORY_PATH, "w", encoding="utf-8") as f:
     json.dump(history, f, ensure_ascii=False, indent=2)
+if benchmarks:
+    with open(PRICES_PATH.replace("prices.json", "benchmarks.json"), "w", encoding="utf-8") as f:
+        json.dump(benchmarks_out, f, ensure_ascii=False, indent=2)
 
-print(f"Actualizado: {list(snapshot.keys())}")
+print(f"Actualizado: {list(snapshot.keys())} · Índices: {list(benchmark_snapshot.keys())}")

@@ -378,6 +378,7 @@
   let activeTab = 'noticias';
   let openMoveRows = new Set();
   let evoRange = 'general';
+  let selectedBenchmark = null;
   let openEvoRows = new Set();
   let tableSort = { key: 'totalCost', dir: -1 };
   let selectedKey = null;
@@ -414,15 +415,18 @@
     catch(e){ console.error('Error guardando', e); }
   }
 
+  let remoteBenchmarks = null;
   async function fetchRemoteData(){
     try{
-      const [pRes, hRes] = await Promise.all([
+      const [pRes, hRes, bRes] = await Promise.all([
         fetch('./data/prices.json?t=' + Date.now(), {cache:'no-store'}),
-        fetch('./data/history.json?t=' + Date.now(), {cache:'no-store'})
+        fetch('./data/history.json?t=' + Date.now(), {cache:'no-store'}),
+        fetch('./data/benchmarks.json?t=' + Date.now(), {cache:'no-store'})
       ]);
       if(pRes.ok) remotePrices = await pRes.json();
       if(hRes.ok) remoteHistory = await hRes.json();
-    }catch(e){ remotePrices = null; remoteHistory = null; }
+      if(bRes.ok) remoteBenchmarks = await bRes.json();
+    }catch(e){ remotePrices = null; remoteHistory = null; remoteBenchmarks = null; }
     updateSyncStatus();
   }
 
@@ -477,7 +481,51 @@
     return map;
   }
 
+  // ---------- TIR (XIRR) ----------
+  // Cash flows: compras (negativo), ventas y dividendos (positivo),
+  // y el valor actual de lo que aún tienes, como si lo vendieras hoy (positivo).
+  function xnpv(rate, flows){
+    const t0 = flows[0].date;
+    return flows.reduce((sum,f)=>{
+      const days = (f.date - t0) / 86400000;
+      return sum + f.amount / Math.pow(1+rate, days/365);
+    }, 0);
+  }
+  function calcXIRR(flows){
+    if(flows.length < 2) return null;
+    const hasPos = flows.some(f=>f.amount>0), hasNeg = flows.some(f=>f.amount<0);
+    if(!hasPos || !hasNeg) return null;
+    let rate = 0.1;
+    for(let i=0;i<100;i++){
+      const npv = xnpv(rate, flows);
+      const d = 0.0001;
+      const deriv = (xnpv(rate+d, flows) - npv) / d;
+      if(Math.abs(deriv) < 1e-10) break;
+      const next = rate - npv/deriv;
+      if(!isFinite(next)) break;
+      if(Math.abs(next-rate) < 1e-7) { rate = next; break; }
+      rate = next;
+    }
+    return isFinite(rate) && rate > -0.999 ? rate*100 : null;
+  }
+  function portfolioXIRR(positions){
+    const flows = [];
+    state.transactions.forEach(t=>{
+      const d = new Date(t.date).getTime();
+      const amount = t.type==='sell' ? (t.shares*t.price - (t.commission||0)) : -(t.shares*t.price + (t.commission||0));
+      flows.push({date:d, amount});
+    });
+    (state.dividends||[]).forEach(dv=>{
+      flows.push({date:new Date(dv.date).getTime(), amount:Number(dv.amount||0)});
+    });
+    const totalValue = positions.reduce((s,p)=> s + (p.hasPrice ? p.currentValue : p.totalCost), 0);
+    if(totalValue > 0) flows.push({date: Date.now(), amount: totalValue});
+    flows.sort((a,b)=>a.date-b.date);
+    return calcXIRR(flows);
+  }
+
   function getPositions(){
+
     const map = {};
     state.transactions.forEach(t=>{
       const key = (t.isin && t.isin.trim()) ? t.isin.trim().toUpperCase() : ('noisin:'+t.ticker.trim().toLowerCase());
@@ -589,6 +637,24 @@
       ${[0.25,0.5,0.75].map(f=>`<line x1="${pad}" y1="${pad+(h-pad*2)*f}" x2="${w-pad}" y2="${pad+(h-pad*2)*f}" stroke="#EEECF7" stroke-width="1"/>`).join('')}
       <path d="${areaPath}" fill="url(#${gid})" stroke="none"/>
       <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  function renderCompareChart(seriesA, seriesB, colorA, colorB, w, h){
+    const pad = 10;
+    if(seriesA.length < 2) return '<p class="no-data">Todavía no hay suficientes puntos para comparar.</p>';
+    const all = seriesA.concat(seriesB);
+    const min = Math.min(...all), max = Math.max(...all);
+    const range = (max-min) || 1;
+    const step = (w-pad*2) / (seriesA.length-1);
+    const pathFor = series => series.map((v,i)=>[pad+i*step, pad+(h-pad*2)*(1-(v-min)/range)])
+      .map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+    const zeroY = (pad + (h-pad*2)*(1-(0-min)/range)).toFixed(1);
+    return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      ${[0.25,0.5,0.75].map(f=>`<line x1="${pad}" y1="${pad+(h-pad*2)*f}" x2="${w-pad}" y2="${pad+(h-pad*2)*f}" stroke="#EEECF7" stroke-width="1"/>`).join('')}
+      <line x1="${pad}" y1="${zeroY}" x2="${w-pad}" y2="${zeroY}" stroke="#D8D4EE" stroke-width="1" stroke-dasharray="3,3"/>
+      <path d="${pathFor(seriesB)}" fill="none" stroke="${colorB}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+      <path d="${pathFor(seriesA)}" fill="none" stroke="${colorA}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
   }
 
@@ -850,6 +916,44 @@
       return any ? total : null;
     }).filter(v=>v!==null);
 
+    // ---- Comparativa contra un índice ----
+    const availableBenchmarks = Object.keys(remoteBenchmarks || {});
+    if(!selectedBenchmark && availableBenchmarks.length) selectedBenchmark = availableBenchmarks[0];
+    let compareHtml = '';
+    if(availableBenchmarks.length){
+      let alignedPort = [], alignedBench = [];
+      points.forEach(pt=>{
+        let total=0, any=false;
+        Object.entries(pt.prices||{}).forEach(([isin,price])=>{
+          const shares = sharesByIsin[isin];
+          if(shares && typeof price === 'number'){ total+=shares*price; any=true; }
+        });
+        const bp = pt.benchmarks && pt.benchmarks[selectedBenchmark];
+        if(any && typeof bp === 'number'){ alignedPort.push(total); alignedBench.push(bp); }
+      });
+      let pctPort = [], pctBench = [];
+      if(alignedPort.length>=2){
+        const p0=alignedPort[0], b0=alignedBench[0];
+        pctPort = alignedPort.map(v=> p0 ? (v-p0)/p0*100 : 0);
+        pctBench = alignedBench.map(v=> b0 ? (v-b0)/b0*100 : 0);
+      }
+      const finalDiff = pctPort.length ? (pctPort[pctPort.length-1] - pctBench[pctBench.length-1]) : null;
+      compareHtml = `
+        <div class="evo-chart-wrap">
+          <p class="evo-chart-label">Tu cartera vs mercado</p>
+          <div class="evo-toggle" style="margin-bottom:12px;">
+            ${availableBenchmarks.map(b=>`<button class="evo-btn bench-btn ${selectedBenchmark===b?'active':''}" data-bench="${escapeHtml(b)}">${escapeHtml(b)}</button>`).join('')}
+          </div>
+          ${pctPort.length>=2 ? renderCompareChart(pctPort, pctBench, '#6C5CE7', '#A3A1B8', 420, 130) : '<p class="no-data">Todavía no hay suficientes puntos para comparar.</p>'}
+          <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:var(--text-dim);">
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#6C5CE7;margin-right:5px;"></span>Tu cartera</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#A3A1B8;margin-right:5px;"></span>${escapeHtml(selectedBenchmark)}</span>
+          </div>
+          ${finalDiff!==null ? `<p style="font-size:12px;font-weight:700;margin:10px 0 0;" class="${finalDiff>=0?'pos':'neg'}">${finalDiff>=0?`Vas ${fmtPct(Math.abs(finalDiff))} por delante del`:`Vas ${fmtPct(Math.abs(finalDiff))} por detrás del`} ${escapeHtml(selectedBenchmark)} en este rango</p>` : ''}
+        </div>
+      `;
+    }
+
     let html = `
       <div class="evo-toggle">
         <button class="evo-btn ${evoRange==='hoy'?'active':''}" data-range="hoy">Hoy</button>
@@ -859,6 +963,7 @@
         <p class="evo-chart-label">Valor total · ${evoRange==='hoy'?'hoy':'histórico completo'}</p>
         ${renderAreaChart(series, '#6C5CE7', 420, 130)}
       </div>
+      ${compareHtml}
       <p class="evo-chart-label" style="margin-bottom:10px;">Por acción — toca para ver su gráfica</p>
     `;
 
@@ -891,8 +996,11 @@
 
     wrap.innerHTML = html;
 
-    wrap.querySelectorAll('.evo-btn').forEach(btn=>{
+    wrap.querySelectorAll('.evo-btn[data-range]').forEach(btn=>{
       btn.addEventListener('click', ()=>{ evoRange = btn.dataset.range; renderActiveTab(); });
+    });
+    wrap.querySelectorAll('.bench-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ selectedBenchmark = btn.dataset.bench; renderActiveTab(); });
     });
     wrap.querySelectorAll('.evo-row-head').forEach(head=>{
       head.addEventListener('click', ()=>{
@@ -989,6 +1097,7 @@
     };
 
     const sel = selectedKey ? rows.find(r=>r.key===selectedKey) : null;
+    const xirr = portfolioXIRR(positions);
     let kpiHtml;
     if(sel){
       const pctOfPortfolio = totals.totalCost>0 ? (sel.totalCost/totals.totalCost*100) : 0;
@@ -1013,6 +1122,11 @@
           <div class="kpi-card"><p class="kpi-label">Ganancia realizada</p><p class="kpi-value ${totals.realizedPnl>=0?'pos':'neg'}">${fmtMoney(totals.realizedPnl)}</p></div>
           <div class="kpi-card"><p class="kpi-label">Dividendos cobrados</p><p class="kpi-value pos">${fmtMoney(totals.dividends)}</p></div>
           <div class="kpi-card"><p class="kpi-label">Comisiones pagadas</p><p class="kpi-value">${fmtMoney(totals.totalCommission)}</p></div>
+          <div class="kpi-card" style="grid-column:1/-1;">
+            <p class="kpi-label">TIR anualizada (XIRR)</p>
+            <p class="kpi-value ${xirr==null?'':(xirr>=0?'pos':'neg')}">${xirr==null?'— (faltan datos o precios)':fmtPct(xirr)}</p>
+            <p style="font-size:10.5px;color:var(--text-faint);margin:6px 0 0;line-height:1.4;">Rentabilidad real ponderada por cuándo metiste cada euro — la métrica que de verdad indica si tu timing de entradas fue bueno, no solo cuánto ha subido el precio.</p>
+          </div>
         </div>
       `;
     }

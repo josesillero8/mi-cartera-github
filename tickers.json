@@ -10,5 +10,9 @@
     { "isin": "NL0009434992", "symbol": "LYB", "label": "LyondellBasell Industries" },
     { "isin": "ES0157261019", "symbol": "ROVI.MC", "label": "Laboratorios Rovi" },
     { "isin": "KYG017191142", "symbol": "2RR.F", "label": "Alibaba Group Holding" }
+  ],
+  "benchmarks": [
+    { "symbol": "^GSPC", "label": "S&P 500" },
+    { "symbol": "^IBEX", "label": "IBEX 35" }
   ]
 }
