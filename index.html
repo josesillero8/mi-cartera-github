@@ -392,22 +392,22 @@
 
   async function loadState(){
     try{
-      const res = await window.storage.get('portfolio-data', false);
-      if(res && res.value){
-        const parsed = JSON.parse(res.value);
+      const raw = localStorage.getItem('portfolio-data');
+      if(raw){
+        const parsed = JSON.parse(raw);
         state.transactions = parsed.transactions || [];
         state.currentPrices = parsed.currentPrices || {};
         state.dividends = parsed.dividends || [];
         state.notes = parsed.notes || {};
       }
-    }catch(e){}
+    }catch(e){ console.error('Error cargando datos guardados', e); }
     await fetchRemoteData();
     render();
     setInterval(async ()=>{ await fetchRemoteData(); render(); }, 5*60*1000);
   }
 
   async function saveState(){
-    try{ await window.storage.set('portfolio-data', JSON.stringify(state), false); }
+    try{ localStorage.setItem('portfolio-data', JSON.stringify(state)); }
     catch(e){ console.error('Error guardando', e); }
   }
 
