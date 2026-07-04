@@ -24,6 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TICKERS_PATH = os.path.join(ROOT, "tickers.json")
 PRICES_PATH = os.path.join(ROOT, "data", "prices.json")
 HISTORY_PATH = os.path.join(ROOT, "data", "history.json")
+EARNINGS_PATH = os.path.join(ROOT, "data", "earnings.json")
 
 MAX_HISTORY_POINTS = 2000  # evita que el archivo crezca sin límite
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; mi-cartera-bot/1.0)"}
@@ -59,6 +60,24 @@ def fetch_yahoo_quote(symbol):
         "changesPercentage": change_pct,
         "currency": meta.get("currency"),
     }
+
+
+def fetch_next_earnings_date(symbol):
+    """Consulta la próxima fecha de resultados de una acción vía Yahoo Finance
+    (endpoint quoteSummary, no oficial pero de la misma fuente ya en uso).
+    Devuelve None si el símbolo no tiene fecha (ETFs, materias primas, etc.)."""
+    url = f"https://query1.finance.yahoo.com/v10/finance/quoteSummary/{symbol}?modules=calendarEvents"
+    req = urllib.request.Request(url, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        data = json.loads(resp.read().decode())
+    result = data.get("quoteSummary", {}).get("result")
+    if not result:
+        return None
+    earnings = (result[0].get("calendarEvents") or {}).get("earnings") or {}
+    dates = earnings.get("earningsDate") or []
+    if not dates or "raw" not in dates[0]:
+        return None
+    return datetime.fromtimestamp(dates[0]["raw"], tz=timezone.utc).isoformat()
 
 
 def eur_conversion_factor(currency):
@@ -180,5 +199,30 @@ with open(HISTORY_PATH, "w", encoding="utf-8") as f:
 if benchmarks:
     with open(PRICES_PATH.replace("prices.json", "benchmarks.json"), "w", encoding="utf-8") as f:
         json.dump(benchmarks_out, f, ensure_ascii=False, indent=2)
+
+# --- Fechas de resultados: solo una vez al día, para no saturar la fuente ---
+today_str = now_iso[:10]
+earnings = load_json(EARNINGS_PATH, {})
+already_done_today = earnings.get("_updated_date") == today_str
+if not already_done_today:
+    for e in entries:
+        isin = e["isin"]
+        symbol = e["symbol"] or isin
+        try:
+            next_date = fetch_next_earnings_date(symbol)
+        except (urllib.error.URLError, ValueError, KeyError, IndexError) as ex:
+            print(f"Aviso: no se pudo obtener fecha de resultados de {isin} ({symbol}): {ex}", file=sys.stderr)
+            continue
+        if next_date:
+            earnings[isin] = {"symbol": symbol, "companyName": e["label"], "date": next_date}
+        elif isin in earnings:
+            # ya no hay fecha futura conocida (p.ej. ETF/ETC sin resultados) -> se retira
+            earnings.pop(isin, None)
+    earnings["_updated_date"] = today_str
+    with open(EARNINGS_PATH, "w", encoding="utf-8") as f:
+        json.dump(earnings, f, ensure_ascii=False, indent=2)
+    print(f"Fechas de resultados actualizadas: {[k for k in earnings if not k.startswith('_')]}")
+else:
+    print("Fechas de resultados: ya actualizadas hoy, no se repite.")
 
 print(f"Actualizado: {list(snapshot.keys())} · Índices: {list(benchmark_snapshot.keys())}")
