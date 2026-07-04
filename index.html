@@ -131,6 +131,12 @@
   .acc-inner{overflow:hidden;}
 
   /* Assets list (Noticias) */
+  .earnings-block{background:var(--purple-soft);border-radius:18px;padding:14px 16px;margin-bottom:14px;}
+  .section-mini-label{font-size:12px;font-weight:700;color:var(--purple);margin:0 0 8px;}
+  .earnings-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12.5px;}
+  .earnings-name{color:var(--text);font-weight:600;}
+  .earnings-days{color:var(--text-dim);font-weight:700;font-size:11.5px;}
+  .earnings-days.urgent{color:var(--red);}
   .move-row{background:var(--card);border-radius:18px;margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
   .move-head{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;}
   .move-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;}
@@ -575,17 +581,20 @@
   }
 
   let remoteBenchmarks = null;
+  let remoteEarnings = null;
   async function fetchRemoteData(){
     try{
-      const [pRes, hRes, bRes] = await Promise.all([
+      const [pRes, hRes, bRes, eRes] = await Promise.all([
         fetch('./data/prices.json?t=' + Date.now(), {cache:'no-store'}),
         fetch('./data/history.json?t=' + Date.now(), {cache:'no-store'}),
-        fetch('./data/benchmarks.json?t=' + Date.now(), {cache:'no-store'})
+        fetch('./data/benchmarks.json?t=' + Date.now(), {cache:'no-store'}),
+        fetch('./data/earnings.json?t=' + Date.now(), {cache:'no-store'})
       ]);
       if(pRes.ok) remotePrices = await pRes.json();
       if(hRes.ok) remoteHistory = await hRes.json();
       if(bRes.ok) remoteBenchmarks = await bRes.json();
-    }catch(e){ remotePrices = null; remoteHistory = null; remoteBenchmarks = null; }
+      if(eRes.ok) remoteEarnings = await eRes.json();
+    }catch(e){ remotePrices = null; remoteHistory = null; remoteBenchmarks = null; remoteEarnings = null; }
     updateSyncStatus();
   }
 
@@ -878,13 +887,44 @@
     requestAnimationFrame(()=> requestAnimationFrame(()=> wrap.classList.remove('entering')));
   }
 
+  function renderUpcomingEarnings(positions){
+    if(!remoteEarnings) return '';
+    const now = Date.now();
+    const upcoming = positions
+      .filter(p=>p.isin && remoteEarnings[p.isin] && remoteEarnings[p.isin].date)
+      .map(p=>{
+        const dateMs = new Date(remoteEarnings[p.isin].date).getTime();
+        const daysLeft = Math.round((dateMs-now)/86400000);
+        return { name:p.name, dateMs, daysLeft };
+      })
+      .filter(e=> e.daysLeft >= 0 && e.daysLeft <= 90)
+      .sort((a,b)=> a.dateMs-b.dateMs);
+    if(upcoming.length===0) return '';
+    const items = upcoming.map(e=>{
+      const urgent = e.daysLeft <= 7;
+      return `
+        <div class="earnings-item">
+          <span class="earnings-name">${escapeHtml(e.name)}</span>
+          <span class="earnings-days ${urgent?'urgent':''}">${e.daysLeft===0?'Hoy':e.daysLeft===1?'Mañana':'En '+e.daysLeft+' días'}</span>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="earnings-block">
+        <p class="section-mini-label">📅 Próximos resultados</p>
+        ${items}
+      </div>
+    `;
+  }
+
   function renderNoticias(positions){
     const wrap = document.getElementById('tab-content');
     if(positions.length===0){
       wrap.innerHTML = '<div class="empty">Todavía no has añadido ninguna operación. Toca el botón + para empezar.</div>';
       return;
     }
-    wrap.innerHTML = positions.map(p=>{
+    const earningsHtml = renderUpcomingEarnings(positions);
+    wrap.innerHTML = earningsHtml + positions.map(p=>{
       const open = openMoveRows.has(p.key);
       const color = colorFor(p.key);
       const changeCls = p.isClosed ? 'flat' : (!p.hasPrice ? 'flat' : (p.pnlPct>=0?'pos':'neg'));
