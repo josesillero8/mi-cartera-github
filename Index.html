@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Mi Cartera</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<!-- iOS: hace que al añadir a pantalla de inicio se abra a pantalla completa, sin barra de Safari -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Cartera">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<!-- Android / resto -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6C5CE7">
+<link rel="icon" href="icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Firebase: sincroniza tus datos entre dispositivos. La configuración real
+     vive en firebase-config.js (no en este archivo), rellena con tus propias
+     claves siguiendo la guía FIREBASE_SETUP.md. -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+<style>
+  :root{
+    --bg:#F5F4FA;
+    --card:#FFFFFF;
+    --card-alt:#F1EFFA;
+    --purple:#6C5CE7;
+    --purple-soft:#EDEAFB;
+    --purple-dark:#4B3FC4;
+    --text:#14142B;
+    --text-dim:#6F6F87;
+    --text-faint:#A3A1B8;
+    --border:#EEECF7;
+    --green:#1AAE68;
+    --green-soft:#E4F8EE;
+    --red:#F0506E;
+    --red-soft:#FDEAEF;
+    --shadow:0 6px 20px rgba(20,20,43,0.06);
+    --shadow-lg:0 12px 30px rgba(108,92,231,0.28);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  #app{
+    background:var(--bg);
+    min-height:100%;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    justify-content:center;
+  }
+  .phone{width:100%;max-width:480px;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;position:relative;}
+
+  /* ===== Topbar ===== */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 14px) 20px 8px;}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .mono{width:30px;height:30px;border-radius:9px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff;}
+  .brand-title{font-size:14px;font-weight:700;}
+  .sync-status{font-size:10.5px;color:var(--green);display:flex;align-items:center;gap:5px;font-weight:600;}
+  .refresh-btn{
+    width:20px;height:20px;border:none;background:var(--card-alt);border-radius:50%;
+    color:var(--text-dim);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    margin-left:2px;line-height:1;
+  }
+  .refresh-btn:active{background:var(--purple-soft);color:var(--purple);}
+  .refresh-btn.spinning{animation:spin 0.7s linear infinite;}
+  @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+  .sync-status.offline{color:var(--text-faint);}
+  .dot-live{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0;}
+
+  /* ===== Hero ===== */
+  .hero{padding:10px 20px 6px;}
+  .hero-label{font-size:12.5px;color:var(--text-dim);margin:0 0 6px;font-weight:500;}
+  .hero-value-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .hero-value{font-weight:800;font-size:36px;letter-spacing:-0.02em;color:var(--text);margin:0;font-variant-numeric:tabular-nums;line-height:1;}
+  .hero-change{font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:20px;white-space:nowrap;}
+  .hero-change.pos{color:var(--green);background:var(--green-soft);}
+  .hero-change.neg{color:var(--red);background:var(--red-soft);}
+  .hero-change.flat{color:var(--text-faint);background:var(--card-alt);}
+
+  /* ===== Favourites row ===== */
+  .fav-scroll{display:flex;gap:12px;overflow-x:auto;padding:16px 20px 4px;scrollbar-width:none;}
+  .fav-scroll::-webkit-scrollbar{display:none;}
+  .fav-card{flex:0 0 auto;width:150px;border-radius:20px;padding:16px;box-shadow:var(--shadow);}
+  .fav-name{font-size:12.5px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:6px;}
+  .fav-mono{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;flex-shrink:0;}
+  .fav-spark{margin:4px 0 10px;}
+  .fav-price{font-size:15px;font-weight:800;margin:0 0 3px;font-variant-numeric:tabular-nums;}
+  .fav-change{font-size:11px;font-weight:700;}
+
+  /* ===== Content ===== */
+  .content-scroll{flex:1;padding:20px 20px 104px;}
+  .section-label{font-size:14px;font-weight:700;margin:2px 0 14px;color:var(--text);}
+  .tab-content{opacity:1;transform:translateY(0);transition:opacity 0.22s ease, transform 0.22s ease;}
+  .tab-content.entering{opacity:0;transform:translateY(8px);}
+  .empty{text-align:center;padding:60px 20px;color:var(--text-faint);font-size:13.5px;}
+
+  /* ===== Bottom nav ===== */
+  .bottom-nav{
+    position:sticky;bottom:0;left:0;right:0;display:flex;background:rgba(255,255,255,0.92);backdrop-filter:blur(14px);
+    border-top:1px solid var(--border);padding:9px 4px calc(9px + env(safe-area-inset-bottom));z-index:20;
+    box-shadow:0 -4px 20px rgba(20,20,43,0.04);
+  }
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;padding:6px 4px;cursor:pointer;color:var(--text-faint);}
+  .nav-item svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke 0.15s;}
+  .nav-item span{font-size:10px;font-weight:600;}
+  .nav-item.active{color:var(--purple);}
+
+  .fab{
+    position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;
+    background:var(--purple);color:#fff;border:none;display:flex;align-items:center;justify-content:center;
+    font-size:26px;font-weight:400;cursor:pointer;box-shadow:var(--shadow-lg);z-index:25;transition:transform 0.12s ease;
+  }
+  .fab:active{transform:scale(0.92);}
+
+  /* ===== Accordion ===== */
+  .acc-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows 0.28s ease;}
+  .acc-wrap.open{grid-template-rows:1fr;}
+  .acc-inner{overflow:hidden;}
+
+  /* Assets list (Noticias) */
+  .earnings-block{background:var(--purple-soft);border-radius:18px;padding:14px 16px;margin-bottom:14px;}
+  .section-mini-label{font-size:12px;font-weight:700;color:var(--purple);margin:0 0 8px;}
+  .earnings-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12.5px;}
+  .earnings-name{color:var(--text);font-weight:600;}
+  .earnings-days{color:var(--text-dim);font-weight:700;font-size:11.5px;}
+  .earnings-days.urgent{color:var(--red);}
+  .move-row{background:var(--card);border-radius:18px;margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
+  .move-head{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;}
+  .move-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;}
+  .move-id{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .move-name{font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .move-tag{font-size:11px;color:var(--text-faint);font-weight:500;}
+  .move-tag.auto{color:var(--purple);}
+  .move-num{text-align:right;}
+  .move-price{font-size:13.5px;color:var(--text);font-weight:700;font-variant-numeric:tabular-nums;}
+  .move-change{font-size:10.5px;margin-top:3px;font-weight:700;padding:2px 7px;border-radius:10px;display:inline-block;}
+  .move-change.pos{color:var(--green);background:var(--green-soft);}
+  .move-change.neg{color:var(--red);background:var(--red-soft);}
+  .move-change.flat{color:var(--text-faint);background:var(--card-alt);}
+  .move-chevron{color:var(--text-faint);transition:transform 0.22s ease;}
+  .move-row.open .move-chevron{transform:rotate(90deg);}
+  .move-detail-content{padding:14px 16px 18px;border-top:1px solid var(--border);}
+  .detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  .xirr-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:var(--purple-soft);border-radius:14px;padding:12px 14px;margin-top:14px;}
+  .xirr-hint{font-size:11px;color:var(--text-dim);margin:8px 2px 0;line-height:1.5;}
+  .growth-chart-block{background:var(--card-alt);border-radius:14px;padding:14px;margin-top:14px;}
+  .detail-item-label{font-size:10.5px;color:var(--text-faint);margin-bottom:5px;font-weight:500;}
+  .detail-item-value{font-size:13.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+
+  .ops-list{margin-top:16px;}
+  .ops-list-label{font-size:10.5px;color:var(--text-faint);margin:0 0 8px;font-weight:500;}
+  .op-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--border);}
+  .op-row:first-of-type{border-top:none;}
+  .op-badge{font-size:9.5px;font-weight:700;padding:3px 7px;border-radius:8px;flex-shrink:0;}
+  .op-badge.buy{color:var(--purple);background:var(--purple-soft);}
+  .op-badge.sell{color:var(--red);background:var(--red-soft);}
+  .op-badge.div{color:var(--green);background:var(--green-soft);}
+  .op-info{flex:1;min-width:0;font-size:11.5px;color:var(--text-dim);}
+  .op-info b{color:var(--text);font-weight:700;}
+  .op-actions{display:flex;gap:2px;flex-shrink:0;}
+  .op-icon-btn{width:26px;height:26px;border:none;background:var(--card-alt);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .op-icon-btn:active{background:var(--purple-soft);color:var(--purple);}
+
+  /* Evolucion */
+  .evo-toggle{display:flex;gap:8px;margin-bottom:16px;background:var(--card-alt);padding:4px;border-radius:14px;width:fit-content;}
+  .evo-btn{padding:7px 16px;border:none;background:none;border-radius:10px;font-size:12px;font-weight:700;color:var(--text-dim);cursor:pointer;}
+  .evo-btn.active{background:var(--card);color:var(--purple);box-shadow:0 2px 8px rgba(20,20,43,0.08);}
+  .evo-chart-wrap{background:var(--card);border-radius:20px;padding:18px 18px;margin-bottom:18px;box-shadow:var(--shadow);}
+  .evo-chart-label{font-size:11.5px;color:var(--text-dim);font-weight:600;margin:0 0 12px;}
+  .evo-row{background:var(--card);border-radius:16px;margin-bottom:9px;overflow:hidden;box-shadow:var(--shadow);}
+  .evo-row-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;gap:10px;}
+  .evo-name{font-size:13.5px;font-weight:700;color:var(--text);}
+  .evo-metrics{display:flex;gap:14px;align-items:center;font-size:12px;font-variant-numeric:tabular-nums;}
+  .evo-metric{text-align:right;}
+  .evo-metric-label{font-size:9.5px;color:var(--text-faint);margin-bottom:2px;font-weight:500;}
+  .evo-chevron{color:var(--text-faint);transition:transform 0.22s ease;}
+  .evo-row.open .evo-chevron{transform:rotate(90deg);}
+  .evo-detail-content{padding:14px 16px 18px;border-top:1px solid var(--border);}
+  .no-data{font-size:11.5px;color:var(--text-faint);}
+
+  /* Tabla / KPIs / Donut */
+  .kpi-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+  .kpi-card{background:var(--card);border-radius:16px;padding:13px 15px;box-shadow:var(--shadow);}
+  .kpi-label{font-size:10.5px;color:var(--text-faint);margin:0 0 6px;font-weight:500;}
+  .kpi-value{font-weight:800;font-size:16px;color:var(--text);margin:0;font-variant-numeric:tabular-nums;}
+  .kpi-value.pos{color:var(--green);}
+  .kpi-value.neg{color:var(--red);}
+  .kpi-clear{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--purple);background:var(--purple-soft);border:none;border-radius:12px;padding:9px 12px;cursor:pointer;}
+  .kpi-clear:active{opacity:0.8;}
+
+  .donut-section{display:flex;flex-direction:column;gap:18px;margin-bottom:20px;background:var(--card);border-radius:20px;padding:20px 18px;box-shadow:var(--shadow);}
+  .exposure-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:20px;}
+  .exposure-block{background:var(--card);border-radius:18px;padding:18px 18px 8px;box-shadow:var(--shadow);}
+  .exposure-bar{display:flex;height:14px;border-radius:8px;overflow:hidden;background:var(--card-alt);margin-bottom:12px;}
+  .exposure-seg{height:100%;min-width:2px;cursor:pointer;transition:opacity 0.15s;}
+  .exposure-seg.dim{opacity:0.25;}
+  .exposure-legend{display:flex;flex-direction:column;gap:2px;}
+  .exposure-legend-item{display:flex;align-items:center;gap:9px;padding:7px 4px;font-size:12px;cursor:pointer;border-radius:10px;}
+  .exposure-legend-item.active{background:var(--purple-soft);padding-left:8px;padding-right:8px;}
+  .exposure-legend-item .legend-name{flex:1;color:var(--text);font-weight:600;}
+  .exposure-legend-item .legend-pct{color:var(--text-dim);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;}
+  @media (min-width:640px){ .exposure-grid{grid-template-columns:1fr 1fr;} }
+  .donut-svg-wrap{position:relative;align-self:center;}
+  .donut-seg{cursor:pointer;transition:opacity 0.15s;}
+  .donut-seg.dim{opacity:0.25;}
+  .donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:110px;}
+  .donut-center-label{font-size:9.5px;color:var(--text-faint);margin:0 0 5px;font-weight:500;}
+  .donut-center-value{font-size:14.5px;font-weight:800;color:var(--text);margin:0;line-height:1.2;}
+  .donut-legend{display:flex;flex-direction:column;gap:3px;}
+  .legend-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:12px;cursor:pointer;font-size:12.5px;}
+  .legend-item.active{background:var(--purple-soft);}
+  .legend-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+  .legend-name{flex:1;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .legend-pct{color:var(--text-dim);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;}
+
+  tr.row-selected td{background:var(--purple-soft);}
+  tr.row-dim td{opacity:0.4;}
+  .table-wrap{overflow-x:auto;background:var(--card);border-radius:16px;box-shadow:var(--shadow);-webkit-overflow-scrolling:touch;}
+  table.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+  table.data-table thead th{text-align:right;padding:12px 13px;font-size:10px;color:var(--text-faint);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap;font-weight:700;position:sticky;top:0;background:var(--card);}
+  table.data-table th:first-child, table.data-table td:first-child{text-align:left;}
+  table.data-table th.sorted{color:var(--purple);}
+  table.data-table td{padding:11px 13px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--text);font-weight:600;}
+  table.data-table tbody tr:last-child td{border-bottom:none;}
+  table.data-table tfoot td{border-top:1px solid var(--border);font-weight:800;color:var(--text);}
+  .pos{color:var(--green);}
+  .neg{color:var(--red);}
+
+  /* ===== Bottom sheet modal ===== */
+  .sheet-overlay{position:fixed;inset:0;background:rgba(20,20,43,0);z-index:50;display:none;transition:background 0.25s ease;}
+  .sheet-overlay.open{display:block;background:rgba(20,20,43,0.45);}
+  .sheet{position:fixed;left:50%;bottom:0;transform:translate(-50%,100%);width:100%;max-width:480px;max-height:88vh;overflow-y:auto;
+    background:#fff;border-radius:24px 24px 0 0;transition:transform 0.3s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom);}
+  .sheet-overlay.open .sheet{transform:translate(-50%,0);}
+  .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:10px auto 4px;}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 16px;}
+  .sheet-head h2{font-size:16px;font-weight:800;margin:0;}
+  .sheet-close{background:var(--card-alt);border:none;border-radius:50%;width:28px;height:28px;color:var(--text-dim);cursor:pointer;font-size:14px;}
+  .sheet-body{padding:0 20px 24px;}
+
+  .form-title{font-size:12.5px;font-weight:700;margin:0 0 12px;color:var(--text);}
+  .mode-toggle{display:flex;gap:8px;margin-bottom:16px;background:var(--card-alt);padding:4px;border-radius:14px;}
+  .mode-btn{flex:1;padding:9px 4px;border:none;background:none;border-radius:10px;font-size:11px;font-weight:700;color:var(--text-dim);cursor:pointer;}
+  .mode-btn.active{background:#fff;color:var(--purple);box-shadow:0 2px 8px rgba(20,20,43,0.08);}
+  form{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;}
+  .field label{display:block;font-size:11px;font-weight:600;color:var(--text-dim);margin-bottom:5px;}
+  .field input, .field select{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-alt);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;}
+  .field input:focus, .field select:focus{outline:none;border-color:var(--purple);background:#fff;}
+  button.add-btn{grid-column:1/-1;padding:13px 18px;background:var(--purple);color:#fff;border:none;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;margin-top:4px;box-shadow:0 8px 18px rgba(108,92,231,0.3);}
+  button.add-btn:active{opacity:0.88;}
+  .form-error{grid-column:1/-1;color:var(--red);font-size:12px;margin-top:4px;font-weight:600;}
+  .empty-isin-note{font-size:12px;color:var(--text-faint);margin:4px 0 0;}
+  .divider{border:none;border-top:1px solid var(--border);margin:20px 0;}
+  .bulk-hint{font-size:12px;color:var(--text-dim);margin:0 0 8px;line-height:1.5;}
+  .bulk-format{font-size:11px;color:var(--purple);margin:0 0 10px;font-weight:600;}
+  .bulk-format code{background:var(--card-alt);padding:2px 6px;border-radius:5px;}
+  #bulk-input{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-alt);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;resize:vertical;}
+  .bulk-actions{display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap;}
+  #bulk-feedback{font-size:11.5px;color:var(--text-dim);font-weight:600;}
+  #bulk-feedback.ok{color:var(--green);}
+  #bulk-feedback.err{color:var(--red);}
+
+  @media (min-width:540px){ .fab{right:calc(50vw - 240px + 18px);} }
+
+  /* ===== Escritorio: contenedor neutro en móvil, elementos exclusivos de escritorio ocultos ===== */
+  .main-col{display:contents;}
+  .sidebar-brand{display:none;}
+  .sidebar-add-btn{display:none;}
+
+  @media (min-width:900px){
+    body{display:flex;justify-content:center;background:var(--bg);}
+    .phone{
+      max-width:1080px;width:100%;
+      display:grid;
+      grid-template-columns:230px 1fr;
+      grid-template-rows:1fr;
+      min-height:100vh;
+    }
+    .main-col{
+      display:block;
+      grid-column:2;
+      overflow-y:auto;
+      border-left:1px solid var(--border);
+    }
+    .bottom-nav{
+      grid-column:1;grid-row:1;position:static;
+      flex-direction:column;align-items:stretch;
+      background:transparent;backdrop-filter:none;box-shadow:none;border-top:none;
+      padding:22px 14px;gap:3px;height:100vh;position:sticky;top:0;
+    }
+    .sidebar-brand{
+      display:flex;align-items:center;gap:9px;padding:6px 10px 22px;
+    }
+    .nav-item{
+      flex-direction:row;justify-content:flex-start;gap:11px;
+      padding:11px 14px;border-radius:12px;
+    }
+    .nav-item svg{width:19px;height:19px;}
+    .nav-item span{font-size:13.5px;}
+    .nav-item.active{background:var(--purple-soft);}
+    .sidebar-add-btn{
+      display:block;margin-top:14px;padding:12px;background:var(--purple);color:#fff;
+      border:none;border-radius:14px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;
+      font-size:13.5px;cursor:pointer;box-shadow:0 8px 18px rgba(108,92,231,0.28);
+    }
+    .sidebar-add-btn:hover{opacity:0.9;}
+    .fab{display:none;}
+
+    .topbar{padding:26px 36px 10px;}
+    .hero{padding:14px 36px 20px;}
+    .fav-scroll{padding:16px 36px 4px;}
+    .content-scroll{padding:22px 36px 60px;max-width:760px;}
+
+    .sheet-overlay{align-items:center;justify-content:center;}
+    .sheet{
+      position:static;max-width:480px;max-height:82vh;border-radius:22px;
+      transform:scale(0.95);opacity:0;transition:transform 0.2s ease, opacity 0.2s ease;
+    }
+    .sheet-overlay.open .sheet{transform:scale(1);opacity:1;}
+    .sheet-handle{display:none;}
+  }
+
+  /* ===== Auth gate ===== */
+  #auth-gate{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);padding:24px;font-family:'Plus Jakarta Sans',sans-serif;
+  }
+  .auth-card{width:100%;max-width:360px;background:var(--card);border-radius:24px;padding:32px 26px;box-shadow:var(--shadow);}
+  .auth-mono{width:44px;height:44px;border-radius:13px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;margin:0 auto 18px;}
+  .auth-title{font-size:19px;font-weight:800;text-align:center;margin:0 0 6px;color:var(--text);}
+  .auth-sub{font-size:12.5px;color:var(--text-dim);text-align:center;margin:0 0 24px;}
+  .auth-field{margin-bottom:12px;}
+  .auth-field label{display:block;font-size:11px;font-weight:600;color:var(--text-dim);margin-bottom:5px;}
+  .auth-field input{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--card-alt);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;}
+  .auth-field input:focus{outline:none;border-color:var(--purple);background:#fff;}
+  .auth-btn{width:100%;padding:12px;background:var(--purple);color:#fff;border:none;border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;margin-top:6px;box-shadow:0 8px 18px rgba(108,92,231,0.3);}
+  .auth-btn:active{opacity:0.88;}
+  .auth-error{color:var(--red);font-size:12px;margin-top:10px;text-align:center;font-weight:600;display:none;}
+  .auth-loading{text-align:center;color:var(--text-faint);font-size:12.5px;padding:40px;}
+  .sign-out-btn{background:none;border:none;color:var(--text-faint);font-size:11px;cursor:pointer;text-decoration:underline;}
+</style>
+
+<div id="auth-gate">
+  <div class="auth-card">
+    <div class="auth-mono">MC</div>
+    <p class="auth-title">Mi Cartera</p>
+    <p class="auth-sub" id="auth-sub">Inicia sesión para ver tu cartera, sincronizada en todos tus dispositivos.</p>
+    <div id="auth-loading" class="auth-loading">Conectando…</div>
+    <form id="auth-form" style="display:none;">
+      <div class="auth-field"><label>Email</label><input type="email" id="auth-email" required autocomplete="username"></div>
+      <div class="auth-field"><label>Contraseña</label><input type="password" id="auth-password" required autocomplete="current-password"></div>
+      <button type="submit" class="auth-btn" id="auth-submit-btn">Iniciar sesión</button>
+      <p class="auth-error" id="auth-error"></p>
+    </form>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="phone">
+    <div class="main-col">
+      <div class="topbar">
+        <div class="brand"><div class="mono">MC</div><span class="brand-title">Mi Cartera</span></div>
+        <div style="text-align:right;">
+          <p class="sync-status" id="sync-status"></p>
+          <button class="sign-out-btn" id="sign-out-btn">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <div class="hero">
+        <p class="hero-label">Valor total de tu cartera</p>
+        <div class="hero-value-row">
+          <p class="hero-value" id="hero-value">—</p>
+          <span class="hero-change" id="hero-change"></span>
+        </div>
+      </div>
+
+      <div class="fav-scroll" id="fav-scroll"></div>
+
+      <div class="content-scroll">
+        <p class="section-label" id="section-label">Tus acciones</p>
+        <div class="tab-content" id="tab-content"></div>
+      </div>
+    </div>
+
+    <button class="fab" id="open-modal-btn">+</button>
+
+    <nav class="bottom-nav">
+      <div class="sidebar-brand"><div class="mono">MC</div><span class="brand-title">Mi Cartera</span></div>
+      <button class="nav-item active" data-tab="noticias">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span>Noticias</span>
+      </button>
+      <button class="nav-item" data-tab="evolucion">
+        <svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 4 7-9"/><path d="M15 7h5v5"/></svg>
+        <span>Evolución</span>
+      </button>
+      <button class="nav-item" data-tab="tabla">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M9 4.5v15"/></svg>
+        <span>Tabla</span>
+      </button>
+      <button class="sidebar-add-btn" id="open-modal-btn-desktop">+ Añadir operación</button>
+    </nav>
+  </div>
+
+  <div class="sheet-overlay" id="modal-overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><h2>Añadir operación</h2><button class="sheet-close" id="modal-close-btn">&times;</button></div>
+      <div class="sheet-body">
+        <div class="mode-toggle">
+          <button type="button" class="mode-btn active" id="mode-new-btn">Nueva</button>
+          <button type="button" class="mode-btn" id="mode-existing-btn">Ampliar</button>
+          <button type="button" class="mode-btn" id="mode-sell-btn">Vender</button>
+          <button type="button" class="mode-btn" id="mode-div-btn">Dividendo</button>
+        </div>
+
+        <form id="txn-form-new">
+          <div class="field"><label>Nombre</label><input type="text" id="fn-ticker" placeholder="Ej. Inditex" required></div>
+          <div class="field"><label>ISIN</label><input type="text" id="fn-isin" placeholder="Ej. ES0148396007" maxlength="12" required style="text-transform:uppercase;"></div>
+          <div class="field"><label>Fecha</label><input type="date" id="fn-date" required></div>
+          <div class="field"><label>Nº acciones</label><input type="number" id="fn-shares" step="any" min="0" placeholder="0" required></div>
+          <div class="field"><label>Precio compra (€)</label><input type="number" id="fn-price" step="any" min="0" placeholder="0.00" required></div>
+          <div class="field"><label>Comisión (€)</label><input type="number" id="fn-commission" step="any" min="0" placeholder="0.00" value="0"></div>
+          <div class="field" style="grid-column:1/-1;">
+            <label>Sector</label>
+            <select id="fn-sector">
+              <option value="Sin clasificar">Sin clasificar</option>
+              <option value="Tecnología">Tecnología</option>
+              <option value="Finanzas">Finanzas</option>
+              <option value="Energía">Energía</option>
+              <option value="Salud">Salud</option>
+              <option value="Consumo">Consumo</option>
+              <option value="Industrial">Industrial</option>
+              <option value="Materias primas">Materias primas</option>
+              <option value="Inmobiliario">Inmobiliario</option>
+              <option value="Comunicación">Comunicación</option>
+              <option value="Utilities">Utilities (energía/agua reguladas)</option>
+              <option value="Fondos / ETF">Fondos / ETF diversificados</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <button type="submit" class="add-btn">Añadir</button>
+          <div class="form-error" id="form-error-new" style="display:none;"></div>
+        </form>
+
+        <form id="txn-form-existing" style="display:none;">
+          <div class="field" style="grid-column:1/-1;"><label>Acción (por ISIN)</label><select id="fe-isin" required></select></div>
+          <div class="field"><label>Fecha</label><input type="date" id="fe-date" required></div>
+          <div class="field"><label>Nº acciones</label><input type="number" id="fe-shares" step="any" min="0" placeholder="0" required></div>
+          <div class="field"><label>Precio compra (€)</label><input type="number" id="fe-price" step="any" min="0" placeholder="0.00" required></div>
+          <div class="field"><label>Comisión (€)</label><input type="number" id="fe-commission" step="any" min="0" placeholder="0.00" value="0"></div>
+          <button type="submit" class="add-btn">Añadir</button>
+          <div class="form-error" id="form-error-existing" style="display:none;"></div>
+        </form>
+
+        <form id="txn-form-sell" style="display:none;">
+          <div class="field" style="grid-column:1/-1;"><label>Acción (por ISIN)</label><select id="fs-isin" required></select></div>
+          <p class="empty-isin-note" id="sell-holdings-note" style="grid-column:1/-1;margin:-4px 0 4px;"></p>
+          <div class="field"><label>Fecha de venta</label><input type="date" id="fs-date" required></div>
+          <div class="field"><label>Nº acciones a vender</label><input type="number" id="fs-shares" step="any" min="0" placeholder="0" required></div>
+          <div class="field"><label>Precio venta (€)</label><input type="number" id="fs-price" step="any" min="0" placeholder="0.00" required></div>
+          <div class="field"><label>Comisión (€)</label><input type="number" id="fs-commission" step="any" min="0" placeholder="0.00" value="0"></div>
+          <button type="submit" class="add-btn" style="background:var(--red);box-shadow:0 8px 18px rgba(240,80,110,0.28);">Registrar venta</button>
+          <div class="form-error" id="form-error-sell" style="display:none;"></div>
+          <p class="empty-isin-note" id="wash-sale-warning" style="grid-column:1/-1;display:none;color:var(--red);font-weight:600;"></p>
+        </form>
+
+        <form id="txn-form-div" style="display:none;">
+          <div class="field" style="grid-column:1/-1;"><label>Acción (por ISIN)</label><select id="fd-isin" required></select></div>
+          <div class="field"><label>Fecha de cobro</label><input type="date" id="fd-date" required></div>
+          <div class="field"><label>Importe neto recibido (€)</label><input type="number" id="fd-amount" step="any" min="0" placeholder="0.00" required></div>
+          <button type="submit" class="add-btn" style="background:var(--green);box-shadow:0 8px 18px rgba(26,174,104,0.28);">Registrar dividendo</button>
+          <div class="form-error" id="form-error-div" style="display:none;"></div>
+        </form>
+
+        <p class="empty-isin-note" id="empty-isin-note" style="display:none;">Todavía no tienes ninguna acción registrada con ISIN. Usa "Nueva" primero.</p>
+
+        <hr class="divider">
+
+        <p class="form-title">Cargar posiciones que ya tienes</p>
+        <p class="bulk-hint">Una línea por acción, con lo que tienes ahora mismo.</p>
+        <p class="bulk-format">Formato: <code>Nombre; nº acciones; precio medio; ISIN (opcional)</code></p>
+        <textarea id="bulk-input" rows="4" placeholder="Inditex; 12; 34.50; ES0148396007"></textarea>
+        <div class="bulk-actions">
+          <button type="button" class="add-btn" id="bulk-import-btn" style="width:auto;">Importar</button>
+          <span id="bulk-feedback"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-overlay" id="edit-overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head"><h2 id="edit-sheet-title">Editar</h2><button class="sheet-close" id="edit-close-btn">&times;</button></div>
+      <div class="sheet-body">
+        <form id="edit-form"></form>
+        <div class="form-error" id="edit-form-error" style="display:none;"></div>
+        <button type="button" class="add-btn" id="edit-delete-btn" style="background:none;color:var(--red);border:1.5px solid var(--red-soft);box-shadow:none;margin-top:10px;">Eliminar esta operación</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let state = { transactions: [], currentPrices: {}, dividends: [], notes: {}, sectors: {} };
+  let remotePrices = null;
+  let remoteHistory = null;
+  let activeTab = 'noticias';
+  let openMoveRows = new Set();
+  let evoRange = 'general';
+  let selectedBenchmark = null;
+  let openEvoRows = new Set();
+  let tableSort = { key: 'totalCost', dir: -1 };
+  let selectedFilter = null; // { type: 'position'|'currency'|'sector', value }
+
+  function matchesFilter(p, filter){
+    if(!filter) return true;
+    if(filter.type==='position') return p.key === filter.value;
+    if(filter.type==='currency') return (p.currency||'EUR') === filter.value;
+    if(filter.type==='sector') return (p.sector||'Sin clasificar') === filter.value;
+    return true;
+  }
+  function filterLabel(filter){
+    if(!filter) return '';
+    if(filter.type==='currency') return 'divisa ' + filter.value;
+    if(filter.type==='sector') return filter.value;
+    return filter.value;
+  }
+  const PALETTE = ['#6C5CE7','#00B894','#E17055','#0984E3','#FDCB6E','#E84393','#00CEC9','#636E72','#A29BFE','#55EFC4'];
+  const SECTOR_OPTIONS = ['Sin clasificar','Tecnología','Finanzas','Energía','Salud','Consumo','Industrial','Materias primas','Inmobiliario','Comunicación','Utilities','Fondos / ETF','Otro'];
+  const SECTION_LABELS = { noticias:'Tus acciones', evolucion:'Evolución', tabla:'Resumen' };
+
+  const fmtMoney = n => (isFinite(n)?n:0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
+  const fmtPct = n => (isFinite(n)?n:0).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+  const fmtNum = n => (isFinite(n)?n:0).toLocaleString('es-ES',{maximumFractionDigits:4});
+  const fmtDate = d => { try { return new Date(d+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return d; } };
+  const escapeHtml = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
+  const colorFor = key => PALETTE[Math.abs(hashCode(key)) % PALETTE.length];
+  function hashCode(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return h; }
+  const initialsFor = name => name.trim().slice(0,2).toUpperCase();
+
+  let currentUser = null;
+  let firestoreUnsub = null;
+  let suppressNextSnapshot = false; // evita recargar justo después de nuestro propio guardado
+
+  function docRefFor(uid){ return firebase.firestore().collection('portfolios').doc(uid); }
+
+  async function loadState(){
+    // La carga real de datos ocurre en el listener de Firestore (ver bindFirestore),
+    // que se conecta en cuanto el usuario inicia sesión. Aquí solo arrancamos
+    // el refresco periódico de precios de mercado.
+    await fetchRemoteData();
+    render();
+    setInterval(async ()=>{ await fetchRemoteData(); render(); }, 5*60*1000);
+  }
+
+  function bindFirestore(uid){
+    if(firestoreUnsub) firestoreUnsub();
+    firestoreUnsub = docRefFor(uid).onSnapshot(snap=>{
+      if(suppressNextSnapshot){ suppressNextSnapshot = false; return; }
+      const data = snap.exists ? snap.data() : {};
+      state.transactions = data.transactions || [];
+      state.currentPrices = data.currentPrices || {};
+      state.dividends = data.dividends || [];
+      state.notes = data.notes || {};
+      state.sectors = data.sectors || {};
+      render();
+    }, err=>{
+      console.error('Error de sincronización', err);
+    });
+  }
+
+  async function saveState(){
+    if(!currentUser) return;
+    try{
+      suppressNextSnapshot = true;
+      await docRefFor(currentUser.uid).set({
+        transactions: state.transactions,
+        currentPrices: state.currentPrices,
+        dividends: state.dividends,
+        notes: state.notes,
+        sectors: state.sectors,
+      });
+    }catch(e){ console.error('Error guardando', e); }
+  }
+
+  let remoteBenchmarks = null;
+  let remoteEarnings = null;
+  async function fetchRemoteData(){
+    try{
+      const [pRes, hRes, bRes, eRes] = await Promise.all([
+        fetch('./data/prices.json?t=' + Date.now(), {cache:'no-store'}),
+        fetch('./data/history.json?t=' + Date.now(), {cache:'no-store'}),
+        fetch('./data/benchmarks.json?t=' + Date.now(), {cache:'no-store'}),
+        fetch('./data/earnings.json?t=' + Date.now(), {cache:'no-store'})
+      ]);
+      if(pRes.ok) remotePrices = await pRes.json();
+      if(hRes.ok) remoteHistory = await hRes.json();
+      if(bRes.ok) remoteBenchmarks = await bRes.json();
+      if(eRes.ok) remoteEarnings = await eRes.json();
+    }catch(e){ remotePrices = null; remoteHistory = null; remoteBenchmarks = null; remoteEarnings = null; }
+    updateSyncStatus();
+  }
+
+  function updateSyncStatus(){
+    const el = document.getElementById('sync-status');
+    if(remotePrices && Object.keys(remotePrices).length){
+      const times = Object.values(remotePrices).map(p=>new Date(p.updated).getTime()).filter(Boolean);
+      const latest = times.length ? new Date(Math.max(...times)) : null;
+      const mins = latest ? Math.max(0, Math.round((Date.now()-latest.getTime())/60000)) : null;
+      el.innerHTML = '<span class="dot-live"></span><span>'+(mins!==null?'hace '+mins+' min':'activo')+'</span><button class="refresh-btn" id="refresh-btn">↻</button>';
+      el.className = 'sync-status';
+    } else {
+      el.innerHTML = '<span>Sin conexión</span><button class="refresh-btn" id="refresh-btn">↻</button>';
+      el.className = 'sync-status offline';
+    }
+    const btn = document.getElementById('refresh-btn');
+    if(btn) btn.addEventListener('click', manualRefresh);
+  }
+
+  let refreshing = false;
+  async function manualRefresh(){
+    if(refreshing) return;
+    refreshing = true;
+    const btn = document.getElementById('refresh-btn');
+    if(btn) btn.classList.add('spinning');
+    await fetchRemoteData();
+    render();
+    refreshing = false;
+  }
+
+  // iOS/Android: cuando la app vuelve a primer plano (reabierta desde el icono, o
+  // el móvil se desbloquea), refresca sola sin esperar al intervalo de 5 minutos.
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible') manualRefresh();
+  });
+  window.addEventListener('pageshow', ()=> manualRefresh());
+  window.addEventListener('focus', ()=> manualRefresh());
+
+  function remotePriceFor(isin){
+    if(!remotePrices || !isin) return null;
+    return remotePrices[isin.toUpperCase()] || null;
+  }
+
+  function allKnownIsins(){
+    const map = {};
+    state.transactions.forEach(t=>{
+      if(t.isin && t.isin.trim()){
+        const isin = t.isin.trim().toUpperCase();
+        if(!map[isin]) map[isin] = t.ticker.trim();
+      }
+    });
+    return map;
+  }
+
+  // ---------- TIR (XIRR) ----------
+  // Cash flows: compras (negativo), ventas y dividendos (positivo),
+  // y el valor actual de lo que aún tienes, como si lo vendieras hoy (positivo).
+  function xnpv(rate, flows){
+    const t0 = flows[0].date;
+    return flows.reduce((sum,f)=>{
+      const days = (f.date - t0) / 86400000;
+      return sum + f.amount / Math.pow(1+rate, days/365);
+    }, 0);
+  }
+  function calcXIRR(flows){
+    if(flows.length < 2) return null;
+    const hasPos = flows.some(f=>f.amount>0), hasNeg = flows.some(f=>f.amount<0);
+    if(!hasPos || !hasNeg) return null;
+    let rate = 0.1;
+    for(let i=0;i<100;i++){
+      const npv = xnpv(rate, flows);
+      const d = 0.0001;
+      const deriv = (xnpv(rate+d, flows) - npv) / d;
+      if(Math.abs(deriv) < 1e-10) break;
+      const next = rate - npv/deriv;
+      if(!isFinite(next)) break;
+      if(Math.abs(next-rate) < 1e-7) { rate = next; break; }
+      rate = next;
+    }
+    return isFinite(rate) && rate > -0.999 ? rate*100 : null;
+  }
+  function portfolioXIRR(positions){
+    const flows = [];
+    state.transactions.forEach(t=>{
+      const d = new Date(t.date).getTime();
+      const amount = t.type==='sell' ? (t.shares*t.price - (t.commission||0)) : -(t.shares*t.price + (t.commission||0));
+      flows.push({date:d, amount});
+    });
+    (state.dividends||[]).forEach(dv=>{
+      flows.push({date:new Date(dv.date).getTime(), amount:Number(dv.amount||0)});
+    });
+    const totalValue = positions.reduce((s,p)=> s + (p.hasPrice ? p.currentValue : p.totalCost), 0);
+    if(totalValue > 0) flows.push({date: Date.now(), amount: totalValue});
+    flows.sort((a,b)=>a.date-b.date);
+    return calcXIRR(flows);
+  }
+
+  function positionXIRR(p){
+    const flows = [];
+    p.ops.forEach(o=>{
+      const d = new Date(o.date).getTime();
+      const amount = o.type==='sell' ? (o.shares*o.price - (o.commission||0)) : -(o.shares*o.price + (o.commission||0));
+      flows.push({date:d, amount});
+    });
+    (state.dividends||[]).filter(d=>d.isin && p.isin && d.isin.toUpperCase()===p.isin).forEach(dv=>{
+      flows.push({date:new Date(dv.date).getTime(), amount:Number(dv.amount||0)});
+    });
+    const finalValue = p.hasPrice ? p.currentValue : (p.isClosed ? 0 : p.totalCost);
+    if(finalValue > 0 || p.isClosed) flows.push({date: Date.now(), amount: finalValue});
+    flows.sort((a,b)=>a.date-b.date);
+    return calcXIRR(flows);
+  }
+
+  // TIR de cualquier grupo de posiciones (una acción, todas las de una divisa, o todas las de un sector)
+  function groupXIRR(matchedPositions){
+    if(matchedPositions.length === 1) return positionXIRR(matchedPositions[0]);
+    const isins = new Set(matchedPositions.map(p=>p.isin).filter(Boolean));
+    const flows = [];
+    matchedPositions.forEach(p=>{
+      p.ops.forEach(o=>{
+        const d = new Date(o.date).getTime();
+        const amount = o.type==='sell' ? (o.shares*o.price - (o.commission||0)) : -(o.shares*o.price + (o.commission||0));
+        flows.push({date:d, amount});
+      });
+    });
+    (state.dividends||[]).forEach(dv=>{
+      if(dv.isin && isins.has(dv.isin.toUpperCase())) flows.push({date:new Date(dv.date).getTime(), amount:Number(dv.amount||0)});
+    });
+    const finalValue = matchedPositions.reduce((s,p)=> s + (p.hasPrice ? p.currentValue : (p.isClosed?0:p.totalCost)), 0);
+    if(finalValue > 0) flows.push({date: Date.now(), amount: finalValue});
+    flows.sort((a,b)=>a.date-b.date);
+    return calcXIRR(flows);
+  }
+
+  function getPositions(){
+
+    const map = {};
+    state.transactions.forEach(t=>{
+      const key = (t.isin && t.isin.trim()) ? t.isin.trim().toUpperCase() : ('noisin:'+t.ticker.trim().toLowerCase());
+      if(!map[key]) map[key] = { display: t.ticker.trim(), isin: t.isin ? t.isin.trim().toUpperCase() : '', ops: [] };
+      map[key].ops.push(t);
+    });
+    return Object.entries(map).map(([key,data])=>{
+      const ops = data.ops.slice().sort((a,b)=> a.date.localeCompare(b.date));
+      const buys = ops.filter(o=>o.type!=='sell');
+      const sells = ops.filter(o=>o.type==='sell');
+
+      const lots = buys.map(o=>({
+        remaining: o.shares,
+        costPerShare: o.price + (o.commission||0)/o.shares,
+      }));
+      let realizedPnl = 0;
+      const washFlags = [];
+      sells.forEach(s=>{
+        let toSell = s.shares, costOfSold = 0;
+        for(const lot of lots){
+          if(toSell<=0) break;
+          if(lot.remaining<=0) continue;
+          const take = Math.min(lot.remaining, toSell);
+          costOfSold += take*lot.costPerShare;
+          lot.remaining -= take;
+          toSell -= take;
+        }
+        const proceeds = s.shares*s.price - (s.commission||0);
+        const gain = proceeds - costOfSold;
+        realizedPnl += gain;
+        if(gain < 0 && data.isin){
+          const sellTime = new Date(s.date).getTime();
+          const nearbyBuy = buys.some(b => Math.abs(new Date(b.date).getTime()-sellTime)/86400000 <= 60 && b.date !== s.date);
+          if(nearbyBuy) washFlags.push(s.date);
+        }
+      });
+
+      const totalShares = lots.reduce((sum,l)=>sum+l.remaining,0);
+      const totalCost = lots.reduce((sum,l)=>sum+l.remaining*l.costPerShare,0);
+      const avgPrice = totalShares>0 ? totalCost/totalShares : 0;
+      const totalCommission = ops.reduce((s,o)=>s+(Number(o.commission)||0),0);
+
+      const remote = data.isin ? remotePriceFor(data.isin) : null;
+      const manualPrice = state.currentPrices[key];
+      const hasManual = manualPrice !== undefined && manualPrice !== null && manualPrice !== '';
+      const currentPrice = remote ? remote.price : (hasManual ? Number(manualPrice) : undefined);
+      const isAuto = !!remote;
+      const hasPrice = totalShares>0 && currentPrice !== undefined && currentPrice !== null && !isNaN(currentPrice);
+      const currentValue = hasPrice ? totalShares*Number(currentPrice) : (totalShares>0 ? null : 0);
+      const pnl = hasPrice ? currentValue-totalCost : null;
+      const pnlPct = hasPrice && totalCost>0 ? (pnl/totalCost)*100 : null;
+
+      const dividends = (state.dividends||[])
+        .filter(d => d.isin && data.isin && d.isin.toUpperCase()===data.isin)
+        .reduce((s,d)=>s+Number(d.amount||0),0);
+
+      const sector = state.sectors[data.isin] || state.sectors[key] || 'Sin clasificar';
+      const currency = (remote && remote.originalCurrency) || 'EUR';
+
+      return {
+        key, name:data.display, isin:data.isin, ops, totalShares, totalCost, avgPrice,
+        currentPrice, hasPrice, isAuto, currentValue, pnl, pnlPct,
+        realizedPnl, totalCommission, dividends, washFlags, isClosed: totalShares<=0 && buys.length>0,
+        sector, currency
+      };
+    }).sort((a,b)=> b.totalCost - a.totalCost);
+  }
+
+  function historyPointsFor(isin, range){
+    if(!remoteHistory || !remoteHistory.points || !isin) return [];
+    let pts = remoteHistory.points.filter(pt => pt.prices && typeof pt.prices[isin] === 'number');
+    if(range === 'hoy'){
+      const todayStr = new Date().toDateString();
+      pts = pts.filter(pt => new Date(pt.timestamp).toDateString() === todayStr);
+    }
+    return pts.map(pt => ({ t: pt.timestamp, v: pt.prices[isin] }));
+  }
+
+  function sparklinePath(values, w, h, pad){
+    if(values.length < 2) return null;
+    const min = Math.min(...values), max = Math.max(...values);
+    const range = (max-min) || 1;
+    const step = (w-pad*2) / (values.length-1);
+    return values.map((v,i)=>{
+      const x = pad + i*step;
+      const y = pad + (h-pad*2) * (1 - (v-min)/range);
+      return (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+  }
+
+  function renderSparkline(values, color, w, h){
+    const pad = 3;
+    const path = sparklinePath(values,w,h,pad);
+    if(!path) return `<svg width="${w}" height="${h}"></svg>`;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+
+  function renderAreaChart(values, color, w, h){
+    const pad = 10;
+    if(values.length < 2) return '<p class="no-data">Todavía no hay suficientes puntos guardados para este rango.</p>';
+    const min = Math.min(...values), max = Math.max(...values);
+    const range = (max-min) || 1;
+    const step = (w-pad*2) / (values.length-1);
+    const pts = values.map((v,i)=>[pad+i*step, pad+(h-pad*2)*(1-(v-min)/range)]);
+    const linePath = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+    const areaPath = linePath + ` L${pts[pts.length-1][0].toFixed(1)},${h-pad} L${pts[0][0].toFixed(1)},${h-pad} Z`;
+    const gid = 'g'+Math.random().toString(36).slice(2,8);
+    return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.20"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient></defs>
+      ${[0.25,0.5,0.75].map(f=>`<line x1="${pad}" y1="${pad+(h-pad*2)*f}" x2="${w-pad}" y2="${pad+(h-pad*2)*f}" stroke="#EEECF7" stroke-width="1"/>`).join('')}
+      <path d="${areaPath}" fill="url(#${gid})" stroke="none"/>
+      <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  function renderCompareChart(seriesA, seriesB, colorA, colorB, w, h){
+    const pad = 10;
+    if(seriesA.length < 2) return '<p class="no-data">Todavía no hay suficientes puntos para comparar.</p>';
+    const all = seriesA.concat(seriesB);
+    const min = Math.min(...all), max = Math.max(...all);
+    const range = (max-min) || 1;
+    const step = (w-pad*2) / (seriesA.length-1);
+    const pathFor = series => series.map((v,i)=>[pad+i*step, pad+(h-pad*2)*(1-(v-min)/range)])
+      .map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+    const zeroY = (pad + (h-pad*2)*(1-(0-min)/range)).toFixed(1);
+    return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      ${[0.25,0.5,0.75].map(f=>`<line x1="${pad}" y1="${pad+(h-pad*2)*f}" x2="${w-pad}" y2="${pad+(h-pad*2)*f}" stroke="#EEECF7" stroke-width="1"/>`).join('')}
+      <line x1="${pad}" y1="${zeroY}" x2="${w-pad}" y2="${zeroY}" stroke="#D8D4EE" stroke-width="1" stroke-dasharray="3,3"/>
+      <path d="${pathFor(seriesB)}" fill="none" stroke="${colorB}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+      <path d="${pathFor(seriesA)}" fill="none" stroke="${colorA}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  function renderSimpleVsCompoundChart(principal, annualRatePct, years, w, h){
+    if(principal<=0 || annualRatePct==null) return '<p class="no-data">Faltan datos (precio o TIR) para proyectar esta comparación.</p>';
+    const r = annualRatePct/100;
+    const pad = 26;
+    const steps = years+1;
+    const simpleSeries = Array.from({length:steps}, (_,t)=> principal*(1+r*t));
+    const compoundSeries = Array.from({length:steps}, (_,t)=> principal*Math.pow(1+r,t));
+    const all = simpleSeries.concat(compoundSeries);
+    const min = Math.min(0,...all), max = Math.max(...all);
+    const range = (max-min) || 1;
+    const stepX = (w-pad*2) / (steps-1);
+    const pathFor = series => series.map((v,i)=>[pad+i*stepX, pad+(h-pad*1.6)*(1-(v-min)/range)])
+      .map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+    const finalSimple = simpleSeries[simpleSeries.length-1];
+    const finalCompound = compoundSeries[compoundSeries.length-1];
+    const gid = 'gc'+Math.random().toString(36).slice(2,8);
+    return `
+      <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#00B894" stop-opacity="0.20"/>
+          <stop offset="100%" stop-color="#00B894" stop-opacity="0"/>
+        </linearGradient></defs>
+        ${[0.25,0.5,0.75].map(f=>`<line x1="${pad}" y1="${pad+(h-pad*1.6)*f}" x2="${w-pad}" y2="${pad+(h-pad*1.6)*f}" stroke="#EEECF7" stroke-width="1"/>`).join('')}
+        <path d="${pathFor(compoundSeries)} L${(pad+(steps-1)*stepX).toFixed(1)},${h-pad*0.6} L${pad},${h-pad*0.6} Z" fill="url(#${gid})" stroke="none"/>
+        <path d="${pathFor(simpleSeries)}" fill="none" stroke="#A3A1B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5,4"/>
+        <path d="${pathFor(compoundSeries)}" fill="none" stroke="#00B894" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">
+        <span style="color:var(--text-dim);">Simple a ${years} años: <b style="color:var(--text);">${fmtMoney(finalSimple)}</b></span>
+        <span style="color:var(--text-dim);">Compuesto a ${years} años: <b style="color:#00B894;">${fmtMoney(finalCompound)}</b></span>
+      </div>
+    `;
+  }
+
+  function renderFavourites(positions){
+    const wrap = document.getElementById('fav-scroll');
+    const top = positions.slice(0,5);
+    if(top.length===0){ wrap.innerHTML=''; return; }
+    wrap.innerHTML = top.map(p=>{
+      const color = colorFor(p.key);
+      const sparkValues = p.isin ? historyPointsFor(p.isin,'general').map(pt=>pt.v).slice(-24) : [];
+      const changeCls = !p.hasPrice ? 'flat' : (p.pnlPct>=0?'pos':'neg');
+      const changeTxt = !p.hasPrice ? 'Sin precio' : (p.pnlPct>=0?'▲ +':'▼ ')+fmtPct(Math.abs(p.pnlPct));
+      return `
+        <div class="fav-card" style="background:${color}15;">
+          <p class="fav-name"><span class="fav-mono" style="background:${color};">${initialsFor(p.name)}</span>${escapeHtml(p.name)}</p>
+          <div class="fav-spark">${renderSparkline(sparkValues, color, 118, 32)}</div>
+          <p class="fav-price">${p.hasPrice?fmtMoney(p.currentPrice):'—'}</p>
+          <p class="fav-change ${changeCls}" style="color:${changeCls==='pos'?'#1AAE68':changeCls==='neg'?'#F0506E':'#A3A1B8'}">${changeTxt}</p>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function render(){
+    const positions = getPositions();
+    const totalInvested = positions.reduce((s,p)=>s+p.totalCost,0);
+    const positionsWithPrice = positions.filter(p=>p.hasPrice);
+    const totalValue = positionsWithPrice.reduce((s,p)=>s+p.currentValue,0) + positions.filter(p=>!p.hasPrice).reduce((s,p)=>s+p.totalCost,0);
+    const totalPnl = positionsWithPrice.reduce((s,p)=>s+p.pnl,0);
+    const allHavePrice = positions.length>0 && positionsWithPrice.length===positions.length;
+
+    document.getElementById('hero-value').textContent = positions.length ? fmtMoney(totalValue) : '—';
+    const changeEl = document.getElementById('hero-change');
+    if(allHavePrice){
+      const pct = totalInvested>0 ? (totalPnl/totalInvested)*100 : 0;
+      changeEl.textContent = (totalPnl>=0?'▲ +':'▼ ') + fmtPct(Math.abs(pct));
+      changeEl.className = 'hero-change ' + (totalPnl>=0?'pos':'neg');
+    } else {
+      changeEl.textContent = positions.length ? 'Falta precio' : '';
+      changeEl.className = 'hero-change flat';
+    }
+
+    renderFavourites(positions);
+
+    if(document.getElementById('fe-isin')) refreshIsinSelect();
+
+    document.getElementById('section-label').textContent = SECTION_LABELS[activeTab];
+    renderActiveTab(positions);
+  }
+
+  function renderActiveTab(positions){
+    positions = positions || getPositions();
+    const wrap = document.getElementById('tab-content');
+    wrap.classList.add('entering');
+    if(activeTab === 'noticias') renderNoticias(positions);
+    else if(activeTab === 'evolucion') renderEvolucion(positions);
+    else renderTabla(positions);
+    requestAnimationFrame(()=> requestAnimationFrame(()=> wrap.classList.remove('entering')));
+  }
+
+  function renderUpcomingEarnings(positions){
+    if(!remoteEarnings) return '';
+    const now = Date.now();
+    const upcoming = positions
+      .filter(p=>p.isin && remoteEarnings[p.isin] && remoteEarnings[p.isin].date)
+      .map(p=>{
+        const dateMs = new Date(remoteEarnings[p.isin].date).getTime();
+        const daysLeft = Math.round((dateMs-now)/86400000);
+        return { name:p.name, dateMs, daysLeft };
+      })
+      .filter(e=> e.daysLeft >= 0 && e.daysLeft <= 90)
+      .sort((a,b)=> a.dateMs-b.dateMs);
+    if(upcoming.length===0) return '';
+    const items = upcoming.map(e=>{
+      const urgent = e.daysLeft <= 7;
+      return `
+        <div class="earnings-item">
+          <span class="earnings-name">${escapeHtml(e.name)}</span>
+          <span class="earnings-days ${urgent?'urgent':''}">${e.daysLeft===0?'Hoy':e.daysLeft===1?'Mañana':'En '+e.daysLeft+' días'}</span>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="earnings-block">
+        <p class="section-mini-label">📅 Próximos resultados</p>
+        ${items}
+      </div>
+    `;
+  }
+
+  function renderNoticias(positions){
+    const wrap = document.getElementById('tab-content');
+    if(positions.length===0){
+      wrap.innerHTML = '<div class="empty">Todavía no has añadido ninguna operación. Toca el botón + para empezar.</div>';
+      return;
+    }
+    const earningsHtml = renderUpcomingEarnings(positions);
+    wrap.innerHTML = earningsHtml + positions.map(p=>{
+      const open = openMoveRows.has(p.key);
+      const color = colorFor(p.key);
+      const changeCls = p.isClosed ? 'flat' : (!p.hasPrice ? 'flat' : (p.pnlPct>=0?'pos':'neg'));
+      const changeTxt = p.isClosed ? 'Cerrada' : (!p.hasPrice ? 'Sin precio' : (p.pnlPct>=0?'+':'')+fmtPct(p.pnlPct));
+      const hasWash = p.washFlags && p.washFlags.length>0;
+      const pxirr = positionXIRR(p);
+      const noteVal = state.notes[p.key] || '';
+      return `
+        <div class="move-row ${open?'open':''}" data-key="${p.key}">
+          <div class="move-head">
+            <div class="move-icon" style="background:${color};">${initialsFor(p.name)}</div>
+            <div class="move-id">
+              <span class="move-name">${escapeHtml(p.name)}${hasWash?' ⚠':''}</span>
+              <span class="move-tag ${p.isAuto?'auto':''}">${p.isin || 'sin ISIN'}${p.isAuto?' ⚡':''}</span>
+            </div>
+            <div class="move-num">
+              <div class="move-price">${p.isClosed?'—':(p.hasPrice?fmtMoney(p.currentPrice):'—')}</div>
+              <div class="move-change ${changeCls}">${changeTxt}</div>
+            </div>
+            <span class="move-chevron">&#9656;</span>
+          </div>
+          <div class="acc-wrap ${open?'open':''}"><div class="acc-inner"><div class="move-detail-content">
+            <div class="detail-grid">
+              <div><div class="detail-item-label">Acciones en cartera</div><div class="detail-item-value">${fmtNum(p.totalShares)}</div></div>
+              <div><div class="detail-item-label">Precio medio</div><div class="detail-item-value">${p.totalShares>0?fmtMoney(p.avgPrice):'—'}</div></div>
+              <div><div class="detail-item-label">Invertido ahora</div><div class="detail-item-value">${fmtMoney(p.totalCost)}</div></div>
+              <div><div class="detail-item-label">Resultado no realizado</div><div class="detail-item-value ${p.hasPrice?(p.pnl>=0?'pos':'neg'):''}">${p.hasPrice?fmtMoney(p.pnl):'—'}</div></div>
+              <div><div class="detail-item-label">Ganancia realizada</div><div class="detail-item-value ${p.realizedPnl!==0?(p.realizedPnl>=0?'pos':'neg'):''}">${fmtMoney(p.realizedPnl)}</div></div>
+              <div><div class="detail-item-label">Dividendos cobrados</div><div class="detail-item-value pos">${fmtMoney(p.dividends)}</div></div>
+              <div><div class="detail-item-label">Comisiones pagadas</div><div class="detail-item-value">${fmtMoney(p.totalCommission)}</div></div>
+              <div><div class="detail-item-label">Operaciones</div><div class="detail-item-value">${p.ops.length}</div></div>
+            </div>
+            ${p.hasPrice||p.isClosed ? `
+            <div class="xirr-compare">
+              <div><div class="detail-item-label">Resultado total (%)</div><div class="detail-item-value ${p.hasPrice?(p.pnlPct>=0?'pos':'neg'):''}">${p.hasPrice?fmtPct(p.pnlPct):'—'}</div></div>
+              <div><div class="detail-item-label">TIR anualizada</div><div class="detail-item-value ${pxirr==null?'':(pxirr>=0?'pos':'neg')}">${pxirr==null?'—':fmtPct(pxirr)}</div></div>
+            </div>
+            ${p.ops.length>1 ? `<p class="xirr-hint">La TIR anualizada tiene en cuenta cuándo hiciste cada una de tus ${p.ops.length} operaciones — es la que de verdad indica si el ritmo de esta inversión es bueno. Mira "Tabla resumen" para ver la proyección simple vs. compuesto.</p>` : ''}
+            ` : ''}
+            ${hasWash?`<p style="color:var(--red);font-size:11.5px;font-weight:600;margin:12px 0 0;">⚠ Alguna venta con pérdidas de esta acción tiene una compra a menos de 2 meses — revisa la regla de los 2 meses antes de declarar.</p>`:''}
+            <div class="ops-list">
+              <p class="ops-list-label">Tus operaciones — toca ✎ para corregir un dato</p>
+              ${p.ops.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(o=>`
+                <div class="op-row">
+                  <span class="op-badge ${o.type==='sell'?'sell':'buy'}">${o.type==='sell'?'Venta':'Compra'}</span>
+                  <span class="op-info">${fmtDate(o.date)} · <b>${fmtNum(o.shares)}</b> acc. a <b>${fmtMoney(o.price)}</b></span>
+                  <span class="op-actions">
+                    <button class="op-icon-btn" data-edit-txn="${o.id}">✎</button>
+                  </span>
+                </div>
+              `).join('')}
+              ${(state.dividends||[]).filter(d=>d.isin===p.isin).sort((a,b)=>b.date.localeCompare(a.date)).map(d=>`
+                <div class="op-row">
+                  <span class="op-badge div">Dividendo</span>
+                  <span class="op-info">${fmtDate(d.date)} · <b>${fmtMoney(d.amount)}</b></span>
+                  <span class="op-actions">
+                    <button class="op-icon-btn" data-edit-div="${d.id}">✎</button>
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+            <div style="margin-top:14px;">
+              <div class="detail-item-label" style="margin-bottom:6px;">Sector</div>
+              <select class="sector-input" data-isin="${p.isin}" data-key="${p.key}" style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-alt);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;">
+                ${SECTOR_OPTIONS.map(s=>`<option value="${s}" ${p.sector===s?'selected':''}>${s}</option>`).join('')}
+              </select>
+            </div>
+            <div style="margin-top:14px;">
+              <div class="detail-item-label" style="margin-bottom:6px;">Tu tesis / notas</div>
+              <textarea class="note-input" data-key="${p.key}" rows="2" placeholder="¿Por qué compraste esta acción? ¿Cuál es tu objetivo?" style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-alt);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;resize:vertical;">${escapeHtml(noteVal)}</textarea>
+            </div>
+          </div></div></div>
+        </div>
+      `;
+    }).join('');
+
+    wrap.querySelectorAll('.sector-input').forEach(sel=>{
+      sel.addEventListener('click', e=> e.stopPropagation());
+      sel.addEventListener('change', async ()=>{
+        const storeKey = sel.dataset.isin || sel.dataset.key;
+        state.sectors[storeKey] = sel.value;
+        await saveState();
+        renderActiveTab();
+      });
+    });
+
+    wrap.querySelectorAll('.note-input').forEach(ta=>{
+      ta.addEventListener('blur', async ()=>{
+        state.notes[ta.dataset.key] = ta.value;
+        await saveState();
+      });
+      ta.addEventListener('click', e=> e.stopPropagation());
+    });
+
+    wrap.querySelectorAll('[data-edit-txn]').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation(); openEditTxn(btn.dataset.editTxn); });
+    });
+    wrap.querySelectorAll('[data-edit-div]').forEach(btn=>{
+      btn.addEventListener('click', e=>{ e.stopPropagation(); openEditDiv(btn.dataset.editDiv); });
+    });
+
+    wrap.querySelectorAll('.move-head').forEach(head=>{
+      head.addEventListener('click', ()=>{
+        const key = head.closest('.move-row').dataset.key;
+        if(openMoveRows.has(key)) openMoveRows.delete(key); else openMoveRows.add(key);
+        renderActiveTab();
+      });
+    });
+  }
+
+  // ---------- Edit sheet (correct or delete an existing entry) ----------
+  const editOverlay = document.getElementById('edit-overlay');
+  function openEditSheet(){ editOverlay.classList.add('open'); document.body.style.overflow='hidden'; }
+  function closeEditSheet(){ editOverlay.classList.remove('open'); document.body.style.overflow=''; }
+  document.getElementById('edit-close-btn').addEventListener('click', closeEditSheet);
+  editOverlay.addEventListener('click', e=>{ if(e.target===editOverlay) closeEditSheet(); });
+
+  function openEditTxn(id){
+    const txn = state.transactions.find(t=>t.id===id);
+    if(!txn) return;
+    const isSell = txn.type==='sell';
+    document.getElementById('edit-sheet-title').textContent = isSell ? 'Editar venta' : 'Editar compra';
+    document.getElementById('edit-form-error').style.display='none';
+    const form = document.getElementById('edit-form');
+    form.innerHTML = `
+      <div class="field"><label>Fecha</label><input type="date" id="edit-date" value="${txn.date}" required></div>
+      <div class="field"><label>Nº acciones</label><input type="number" id="edit-shares" step="any" min="0" value="${txn.shares}" required></div>
+      <div class="field"><label>${isSell?'Precio venta (€)':'Precio compra (€)'}</label><input type="number" id="edit-price" step="any" min="0" value="${txn.price}" required></div>
+      <div class="field"><label>Comisión (€)</label><input type="number" id="edit-commission" step="any" min="0" value="${txn.commission||0}"></div>
+      <button type="submit" class="add-btn">Guardar cambios</button>
+    `;
+    form.onsubmit = async e=>{
+      e.preventDefault();
+      const errorEl = document.getElementById('edit-form-error');
+      const date = document.getElementById('edit-date').value;
+      const shares = Number(document.getElementById('edit-shares').value);
+      const price = Number(document.getElementById('edit-price').value);
+      const commission = Number(document.getElementById('edit-commission').value || 0);
+      if(!date || !(shares>0) || !(price>0)){
+        errorEl.textContent = 'Revisa fecha, nº de acciones y precio.'; errorEl.style.display='block'; return;
+      }
+      if(isSell){
+        const heldExcluding = sharesHeldFor(txn.isin) + txn.shares; // add back this sale's shares before checking new amount
+        if(shares > heldExcluding){
+          errorEl.textContent = `No puedes vender más de ${fmtNum(heldExcluding)} acciones.`; errorEl.style.display='block'; return;
+        }
+      }
+      txn.date = date; txn.shares = shares; txn.price = price; txn.commission = commission;
+      await saveState();
+      closeEditSheet();
+      render();
+    };
+    document.getElementById('edit-delete-btn').onclick = async ()=>{
+      state.transactions = state.transactions.filter(t=>t.id!==id);
+      await saveState();
+      closeEditSheet();
+      render();
+    };
+    openEditSheet();
+  }
+
+  function openEditDiv(id){
+    const div = (state.dividends||[]).find(d=>d.id===id);
+    if(!div) return;
+    document.getElementById('edit-sheet-title').textContent = 'Editar dividendo';
+    document.getElementById('edit-form-error').style.display='none';
+    const form = document.getElementById('edit-form');
+    form.innerHTML = `
+      <div class="field"><label>Fecha</label><input type="date" id="edit-date" value="${div.date}" required></div>
+      <div class="field"><label>Importe neto (€)</label><input type="number" id="edit-amount" step="any" min="0" value="${div.amount}" required></div>
+      <button type="submit" class="add-btn">Guardar cambios</button>
+    `;
+    form.onsubmit = async e=>{
+      e.preventDefault();
+      const errorEl = document.getElementById('edit-form-error');
+      const date = document.getElementById('edit-date').value;
+      const amount = Number(document.getElementById('edit-amount').value);
+      if(!date || !(amount>0)){
+        errorEl.textContent = 'Revisa fecha e importe.'; errorEl.style.display='block'; return;
+      }
+      div.date = date; div.amount = amount;
+      await saveState();
+      closeEditSheet();
+      render();
+    };
+    document.getElementById('edit-delete-btn').onclick = async ()=>{
+      state.dividends = state.dividends.filter(d=>d.id!==id);
+      await saveState();
+      closeEditSheet();
+      render();
+    };
+    openEditSheet();
+  }
+
+  function renderEvolucion(positions){
+    const wrap = document.getElementById('tab-content');
+    if(positions.length===0){
+      wrap.innerHTML = '<div class="empty">Todavía no has añadido ninguna operación.</div>';
+      return;
+    }
+
+    const sharesByIsin = {};
+    positions.forEach(p=>{ if(p.isin) sharesByIsin[p.isin] = p.totalShares; });
+
+    let points = (remoteHistory && remoteHistory.points) || [];
+    if(evoRange === 'hoy'){
+      const todayStr = new Date().toDateString();
+      points = points.filter(pt => new Date(pt.timestamp).toDateString() === todayStr);
+    }
+    const series = points.map(pt=>{
+      let total = 0, any=false;
+      Object.entries(pt.prices||{}).forEach(([isin, price])=>{
+        const shares = sharesByIsin[isin];
+        if(shares && typeof price === 'number'){ total += shares*price; any=true; }
+      });
+      return any ? total : null;
+    }).filter(v=>v!==null);
+
+    // ---- Comparativa contra un índice ----
+    const availableBenchmarks = Object.keys(remoteBenchmarks || {});
+    if(!selectedBenchmark && availableBenchmarks.length) selectedBenchmark = availableBenchmarks[0];
+    let compareHtml = '';
+    if(availableBenchmarks.length){
+      let alignedPort = [], alignedBench = [];
+      points.forEach(pt=>{
+        let total=0, any=false;
+        Object.entries(pt.prices||{}).forEach(([isin,price])=>{
+          const shares = sharesByIsin[isin];
+          if(shares && typeof price === 'number'){ total+=shares*price; any=true; }
+        });
+        const bp = pt.benchmarks && pt.benchmarks[selectedBenchmark];
+        if(any && typeof bp === 'number'){ alignedPort.push(total); alignedBench.push(bp); }
+      });
+      let pctPort = [], pctBench = [];
+      if(alignedPort.length>=2){
+        const p0=alignedPort[0], b0=alignedBench[0];
+        pctPort = alignedPort.map(v=> p0 ? (v-p0)/p0*100 : 0);
+        pctBench = alignedBench.map(v=> b0 ? (v-b0)/b0*100 : 0);
+      }
+      const finalDiff = pctPort.length ? (pctPort[pctPort.length-1] - pctBench[pctBench.length-1]) : null;
+      compareHtml = `
+        <div class="evo-chart-wrap">
+          <p class="evo-chart-label">Tu cartera vs mercado</p>
+          <div class="evo-toggle" style="margin-bottom:12px;">
+            ${availableBenchmarks.map(b=>`<button class="evo-btn bench-btn ${selectedBenchmark===b?'active':''}" data-bench="${escapeHtml(b)}">${escapeHtml(b)}</button>`).join('')}
+          </div>
+          ${pctPort.length>=2 ? renderCompareChart(pctPort, pctBench, '#6C5CE7', '#A3A1B8', 420, 130) : '<p class="no-data">Todavía no hay suficientes puntos para comparar.</p>'}
+          <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:var(--text-dim);">
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#6C5CE7;margin-right:5px;"></span>Tu cartera</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#A3A1B8;margin-right:5px;"></span>${escapeHtml(selectedBenchmark)}</span>
+          </div>
+          ${finalDiff!==null ? `<p style="font-size:12px;font-weight:700;margin:10px 0 0;" class="${finalDiff>=0?'pos':'neg'}">${finalDiff>=0?`Vas ${fmtPct(Math.abs(finalDiff))} por delante del`:`Vas ${fmtPct(Math.abs(finalDiff))} por detrás del`} ${escapeHtml(selectedBenchmark)} en este rango</p>` : ''}
+        </div>
+      `;
+    }
+
+    let html = `
+      <div class="evo-toggle">
+        <button class="evo-btn ${evoRange==='hoy'?'active':''}" data-range="hoy">Hoy</button>
+        <button class="evo-btn ${evoRange==='general'?'active':''}" data-range="general">Desde el inicio</button>
+      </div>
+      <div class="evo-chart-wrap">
+        <p class="evo-chart-label">Valor total · ${evoRange==='hoy'?'hoy':'histórico completo'}</p>
+        ${renderAreaChart(series, '#6C5CE7', 420, 130)}
+      </div>
+      ${compareHtml}
+      <p class="evo-chart-label" style="margin-bottom:10px;">Por acción — toca para ver su gráfica</p>
+    `;
+
+    positions.forEach(p=>{
+      const pts = p.isin ? historyPointsFor(p.isin, evoRange) : [];
+      const values = pts.map(pt=>pt.v);
+      const firstV = values[0], lastV = values[values.length-1];
+      const rangeChangePct = (values.length>=2 && firstV) ? ((lastV-firstV)/firstV*100) : null;
+      const open = openEvoRows.has(p.key);
+      const color = colorFor(p.key);
+
+      html += `
+        <div class="evo-row ${open?'open':''}" data-key="${p.key}">
+          <div class="evo-row-head">
+            <span class="evo-name">${escapeHtml(p.name)}</span>
+            <div class="evo-metrics">
+              <div class="evo-metric">
+                <div class="evo-metric-label">${evoRange==='hoy'?'Hoy':'Rango'}</div>
+                <div class="${rangeChangePct===null?'':(rangeChangePct>=0?'pos':'neg')}">${rangeChangePct===null?'N/D':(rangeChangePct>=0?'+':'')+fmtPct(rangeChangePct)}</div>
+              </div>
+              <span class="evo-chevron">&#9656;</span>
+            </div>
+          </div>
+          <div class="acc-wrap ${open?'open':''}"><div class="acc-inner"><div class="evo-detail-content">
+            ${renderAreaChart(values, color, 400, 110)}
+          </div></div></div>
+        </div>
+      `;
+    });
+
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('.evo-btn[data-range]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ evoRange = btn.dataset.range; renderActiveTab(); });
+    });
+    wrap.querySelectorAll('.bench-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ selectedBenchmark = btn.dataset.bench; renderActiveTab(); });
+    });
+    wrap.querySelectorAll('.evo-row-head').forEach(head=>{
+      head.addEventListener('click', ()=>{
+        const key = head.closest('.evo-row').dataset.key;
+        if(openEvoRows.has(key)) openEvoRows.delete(key); else openEvoRows.add(key);
+        renderActiveTab();
+      });
+    });
+  }
+
+  function renderExposureBar(positions, field, title, filter){
+    const total = positions.reduce((s,p)=>s+p.totalCost,0);
+    const groups = {};
+    positions.forEach(p=>{
+      const g = p[field] || 'Sin clasificar';
+      groups[g] = (groups[g]||0) + p.totalCost;
+    });
+    const entries = Object.entries(groups).sort((a,b)=>b[1]-a[1]);
+    if(total<=0 || entries.length===0){
+      return `<div class="exposure-block"><p class="evo-chart-label">${title}</p><p class="no-data">Todavía no hay datos suficientes.</p></div>`;
+    }
+    const segs = entries.map(([label,value],i)=>({
+      label, value, pct: value/total*100, color: PALETTE[i % PALETTE.length]
+    }));
+    const bar = segs.map(s=>{
+      const dim = filter && !(filter.type===field && filter.value===s.label) ? 'dim' : '';
+      return `<div class="exposure-seg ${dim}" data-field="${field}" data-value="${escapeHtml(s.label)}" style="width:${s.pct}%;background:${s.color};" title="${escapeHtml(s.label)}: ${fmtPct(s.pct)}"></div>`;
+    }).join('');
+    const legend = segs.map(s=>{
+      const active = filter && filter.type===field && filter.value===s.label;
+      return `
+      <div class="exposure-legend-item ${active?'active':''}" data-field="${field}" data-value="${escapeHtml(s.label)}">
+        <span class="legend-dot" style="background:${s.color}"></span>
+        <span class="legend-name">${escapeHtml(s.label)}</span>
+        <span class="legend-pct">${fmtPct(s.pct)}</span>
+      </div>
+    `;
+    }).join('');
+    return `
+      <div class="exposure-block">
+        <p class="evo-chart-label">${title}</p>
+        <div class="exposure-bar">${bar}</div>
+        <div class="exposure-legend">${legend}</div>
+      </div>
+    `;
+  }
+
+  function renderDonut(positions, filter){
+    const size = 160, stroke = 22, r = (size-stroke)/2, c = 2*Math.PI*r;
+    const total = positions.reduce((s,p)=>s+p.totalCost,0);
+    let offset = 0;
+    const segs = positions.map((p)=>{
+      const pct = total>0 ? p.totalCost/total : 0;
+      const dash = pct*c;
+      const seg = { p, color: colorFor(p.key), dashoffset: -offset, dasharray: `${dash} ${c-dash}`, pct };
+      offset += dash;
+      return seg;
+    });
+    const circles = segs.map(seg=>{
+      const dim = filter && !matchesFilter(seg.p, filter) ? 'dim' : '';
+      return `<circle class="donut-seg ${dim}" data-key="${seg.p.key}" cx="${size/2}" cy="${size/2}" r="${r}"
+        fill="none" stroke="${seg.color}" stroke-width="${stroke}"
+        stroke-dasharray="${seg.dasharray}" stroke-dashoffset="${seg.dashoffset}"
+        transform="rotate(-90 ${size/2} ${size/2})"/>`;
+    }).join('');
+
+    const matched = filter ? positions.filter(p=>matchesFilter(p,filter)) : [];
+    const matchedCost = matched.reduce((s,p)=>s+p.totalCost,0);
+    const centerValue = filter ? fmtPct((matchedCost/total)*100) : fmtMoney(total);
+
+    const legend = segs.map(seg=>{
+      const active = filter && filter.type==='position' && filter.value===seg.p.key;
+      return `<div class="legend-item ${active?'active':''}" data-key="${seg.p.key}">
+        <span class="legend-dot" style="background:${seg.color}"></span>
+        <span class="legend-name">${escapeHtml(seg.p.name)}</span>
+        <span class="legend-pct">${fmtPct(seg.pct*100)}</span>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="donut-section">
+        <div class="donut-svg-wrap">
+          <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${circles}</svg>
+          <div class="donut-center">
+            <p class="donut-center-label">${filter?'% de la cartera':'Invertido'}</p>
+            <p class="donut-center-value">${centerValue}</p>
+          </div>
+        </div>
+        <div class="donut-legend">${legend}</div>
+      </div>
+    `;
+  }
+
+  const TABLE_COLS = [
+    {key:'name', label:'Acción', fmt:v=>escapeHtml(v)},
+    {key:'nops', label:'Op.', fmt:v=>v},
+    {key:'totalShares', label:'Acc.', fmt:v=>fmtNum(v)},
+    {key:'avgPrice', label:'P. medio', fmt:v=>fmtMoney(v)},
+    {key:'totalCost', label:'Invertido', fmt:v=>fmtMoney(v)},
+    {key:'currentPrice', label:'Actual', fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'currentValue', label:'Valor', fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'pnl', label:'Result. €', fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'pnlPct', label:'Result. %', fmt:v=>v==null?'—':fmtPct(v)}
+  ];
+
+  function renderTabla(positions){
+    const wrap = document.getElementById('tab-content');
+    if(positions.length===0){
+      wrap.innerHTML = '<div class="empty">Todavía no has añadido ninguna operación.</div>';
+      return;
+    }
+    const rows = positions.map(p=>({
+      key:p.key, name:p.name, isin:p.isin, nops:p.ops.length, totalShares:p.totalShares, avgPrice:p.avgPrice,
+      totalCost:p.totalCost, currentPrice:p.currentPrice ?? null, currentValue:p.currentValue,
+      pnl:p.pnl, pnlPct:p.pnlPct, source: p.isAuto?'Auto ⚡':(p.hasPrice?'Manual':'—'),
+      realizedPnl:p.realizedPnl, dividends:p.dividends, totalCommission:p.totalCommission
+    }));
+    rows.sort((a,b)=>{
+      const {key,dir} = tableSort;
+      let av=a[key], bv=b[key];
+      if(typeof av === 'string') return av.localeCompare(bv)*dir;
+      av = av==null?-Infinity:av; bv = bv==null?-Infinity:bv;
+      return (av-bv)*dir;
+    });
+    const totals = {
+      totalCost: rows.reduce((s,r)=>s+r.totalCost,0),
+      currentValue: rows.reduce((s,r)=> s+(r.currentValue??0),0),
+      pnl: rows.reduce((s,r)=> s+(r.pnl??0),0),
+      realizedPnl: rows.reduce((s,r)=> s+(r.realizedPnl||0),0),
+      dividends: rows.reduce((s,r)=> s+(r.dividends||0),0),
+      totalCommission: rows.reduce((s,r)=> s+(r.totalCommission||0),0),
+    };
+
+    const filteredPositions = selectedFilter ? positions.filter(p=>matchesFilter(p,selectedFilter)) : [];
+    const xirr = portfolioXIRR(positions);
+    let kpiHtml;
+    if(selectedFilter && filteredPositions.length){
+      const fInvested = filteredPositions.reduce((s,p)=>s+p.totalCost,0);
+      const fValue = filteredPositions.reduce((s,p)=> s+(p.currentValue??0),0);
+      const fPnl = filteredPositions.reduce((s,p)=> s+(p.pnl??0),0);
+      const fRealized = filteredPositions.reduce((s,p)=> s+(p.realizedPnl||0),0);
+      const fDividends = filteredPositions.reduce((s,p)=> s+(p.dividends||0),0);
+      const pctOfPortfolio = totals.totalCost>0 ? (fInvested/totals.totalCost*100) : 0;
+      const label = filterLabel(selectedFilter);
+      const gXirr = groupXIRR(filteredPositions);
+      kpiHtml = `
+        <div class="kpi-row">
+          <div class="kpi-card"><p class="kpi-label">Invertido en ${escapeHtml(label)}</p><p class="kpi-value">${fmtMoney(fInvested)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Valor actual</p><p class="kpi-value">${fmtMoney(fValue)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Resultado</p><p class="kpi-value ${fPnl>=0?'pos':'neg'}">${fmtMoney(fPnl)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">% de tu cartera</p><p class="kpi-value">${fmtPct(pctOfPortfolio)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Ganancia realizada</p><p class="kpi-value ${fRealized>=0?'pos':'neg'}">${fmtMoney(fRealized)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Dividendos</p><p class="kpi-value pos">${fmtMoney(fDividends)}</p></div>
+          <div class="kpi-card" style="grid-column:1/-1;">
+            <p class="kpi-label">TIR anualizada de ${escapeHtml(label)}</p>
+            <p class="kpi-value ${gXirr==null?'':(gXirr>=0?'pos':'neg')}">${gXirr==null?'— (faltan datos o precios)':fmtPct(gXirr)}</p>
+            ${gXirr!=null ? `
+            <div class="growth-chart-block" style="margin-top:12px;background:var(--card);">
+              <p class="detail-item-label" style="margin-bottom:8px;">Si mantuvieras esta TIR: simple vs. interés compuesto a 20 años</p>
+              ${renderSimpleVsCompoundChart(fValue, gXirr, 20, 680, 160)}
+              <p class="xirr-hint">Proyección ilustrativa a partir de la TIR real hasta hoy de ${escapeHtml(label)} — no es una predicción ni garantía de rentabilidad futura.</p>
+            </div>
+            ` : ''}
+          </div>
+          <button class="kpi-clear" id="kpi-clear-btn">✕ Ver cartera completa</button>
+        </div>
+      `;
+    } else {
+      kpiHtml = `
+        <div class="kpi-row">
+          <div class="kpi-card"><p class="kpi-label">Invertido total</p><p class="kpi-value">${fmtMoney(totals.totalCost)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Valor actual</p><p class="kpi-value">${fmtMoney(totals.currentValue)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Resultado no realizado</p><p class="kpi-value ${totals.pnl>=0?'pos':'neg'}">${fmtMoney(totals.pnl)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Posiciones</p><p class="kpi-value">${rows.length}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Ganancia realizada</p><p class="kpi-value ${totals.realizedPnl>=0?'pos':'neg'}">${fmtMoney(totals.realizedPnl)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Dividendos cobrados</p><p class="kpi-value pos">${fmtMoney(totals.dividends)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Comisiones pagadas</p><p class="kpi-value">${fmtMoney(totals.totalCommission)}</p></div>
+          <div class="kpi-card" style="grid-column:1/-1;">
+            <p class="kpi-label">TIR anualizada (XIRR)</p>
+            <p class="kpi-value ${xirr==null?'':(xirr>=0?'pos':'neg')}">${xirr==null?'— (faltan datos o precios)':fmtPct(xirr)}</p>
+            <p style="font-size:10.5px;color:var(--text-faint);margin:6px 0 0;line-height:1.4;">Rentabilidad real ponderada por cuándo metiste cada euro — la métrica que de verdad indica si tu timing de entradas fue bueno, no solo cuánto ha subido el precio.</p>
+            ${xirr!=null ? `
+            <div class="growth-chart-block" style="margin-top:12px;background:var(--card);">
+              <p class="detail-item-label" style="margin-bottom:8px;">Si mantuvieras esta TIR: simple vs. interés compuesto a 20 años</p>
+              ${renderSimpleVsCompoundChart(totals.currentValue, xirr, 20, 680, 160)}
+              <p class="xirr-hint">Proyección ilustrativa a partir de tu TIR real hasta hoy — no es una predicción ni garantía de rentabilidad futura.</p>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    const donutHtml = renderDonut(positions, selectedFilter);
+    const exposureHtml = `
+      <div class="exposure-grid">
+        ${renderExposureBar(positions, 'currency', 'Exposición por divisa', selectedFilter)}
+        ${renderExposureBar(positions, 'sector', 'Exposición por sector', selectedFilter)}
+      </div>
+    `;
+
+    let thead = '<tr>' + TABLE_COLS.map(c=>`<th data-key="${c.key}" class="${tableSort.key===c.key?'sorted':''}">${c.label}${tableSort.key===c.key?(tableSort.dir===1?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
+    let tbody = rows.map(r=>{
+      const p = positions.find(pp=>pp.key===r.key);
+      const rowCls = selectedFilter ? (matchesFilter(p,selectedFilter) ? 'row-selected' : 'row-dim') : '';
+      return `<tr class="${rowCls}" data-key="${r.key}">` + TABLE_COLS.map(c=>{
+        let cellClass = '';
+        if((c.key==='pnl'||c.key==='pnlPct') && r[c.key]!=null) cellClass = r[c.key]>=0 ? 'pos':'neg';
+        return `<td class="${cellClass}">${c.fmt(r[c.key])}</td>`;
+      }).join('') + '</tr>';
+    }).join('');
+    const tfoot = `<tr>
+      <td colspan="4">Total</td>
+      <td>${fmtMoney(totals.totalCost)}</td>
+      <td></td>
+      <td>${fmtMoney(totals.currentValue)}</td>
+      <td class="${totals.pnl>=0?'pos':'neg'}">${fmtMoney(totals.pnl)}</td>
+      <td class="${totals.pnl>=0?'pos':'neg'}">${totals.totalCost>0?fmtPct(totals.pnl/totals.totalCost*100):'—'}</td>
+    </tr>`;
+
+    wrap.innerHTML = kpiHtml + donutHtml + exposureHtml + `<div class="table-wrap"><table class="data-table"><thead>${thead}</thead><tbody>${tbody}</tbody><tfoot>${tfoot}</tfoot></table></div>`;
+
+    wrap.querySelectorAll('th[data-key]').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const key = th.dataset.key;
+        if(tableSort.key === key) tableSort.dir *= -1;
+        else tableSort = { key, dir: -1 };
+        renderActiveTab();
+      });
+    });
+
+    function toggleFilter(type, value){
+      selectedFilter = (selectedFilter && selectedFilter.type===type && selectedFilter.value===value) ? null : {type, value};
+      renderActiveTab();
+    }
+    wrap.querySelectorAll('.donut-seg').forEach(seg=>{
+      seg.addEventListener('click', ()=> toggleFilter('position', seg.dataset.key));
+    });
+    wrap.querySelectorAll('.legend-item').forEach(item=>{
+      item.addEventListener('click', ()=> toggleFilter('position', item.dataset.key));
+    });
+    wrap.querySelectorAll('.exposure-seg[data-field]').forEach(seg=>{
+      seg.addEventListener('click', ()=> toggleFilter(seg.dataset.field, seg.dataset.value));
+    });
+    wrap.querySelectorAll('.exposure-legend-item[data-field]').forEach(item=>{
+      item.addEventListener('click', ()=> toggleFilter(item.dataset.field, item.dataset.value));
+    });
+    wrap.querySelectorAll('tbody tr[data-key]').forEach(tr=>{
+      tr.addEventListener('click', ()=> toggleFilter('position', tr.dataset.key));
+    });
+    const clearBtn = document.getElementById('kpi-clear-btn');
+    if(clearBtn) clearBtn.addEventListener('click', ()=>{ selectedFilter = null; renderActiveTab(); });
+  }
+
+  document.querySelectorAll('.nav-item').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(activeTab === btn.dataset.tab) return;
+      activeTab = btn.dataset.tab;
+      document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active', b===btn));
+      document.getElementById('section-label').textContent = SECTION_LABELS[activeTab];
+      renderActiveTab();
+    });
+  });
+
+  const modalOverlay = document.getElementById('modal-overlay');
+  function openModal(){
+    modalOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    refreshIsinSelect();
+  }
+  document.getElementById('open-modal-btn').addEventListener('click', openModal);
+  document.getElementById('open-modal-btn-desktop').addEventListener('click', openModal);
+  function closeModal(){
+    modalOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', e=>{ if(e.target===modalOverlay) closeModal(); });
+
+  function refreshIsinSelect(){
+    const known = allKnownIsins();
+    const entries = Object.entries(known);
+    const note = document.getElementById('empty-isin-note');
+    ['fe-isin','fs-isin','fd-isin'].forEach(id=>{
+      const select = document.getElementById(id);
+      select.innerHTML = entries.map(([isin,name])=>`<option value="${isin}">${escapeHtml(name)} · ${isin}</option>`).join('');
+    });
+    const anyForm = document.getElementById('txn-form-existing');
+    if(entries.length === 0){
+      note.style.display = 'block';
+      anyForm.style.display = 'none';
+    } else {
+      note.style.display = 'none';
+    }
+    updateSellHoldingsNote();
+  }
+
+  function sharesHeldFor(isin){
+    const positions = getPositions();
+    const p = positions.find(pp=>pp.isin===isin);
+    return p ? p.totalShares : 0;
+  }
+
+  function updateSellHoldingsNote(){
+    const isin = document.getElementById('fs-isin').value;
+    const note = document.getElementById('sell-holdings-note');
+    if(!isin){ note.textContent=''; return; }
+    const held = sharesHeldFor(isin);
+    note.textContent = `Tienes ${fmtNum(held)} acciones de esta posición.`;
+    document.getElementById('fs-shares').max = held;
+  }
+
+  const modeBtns = {
+    new: document.getElementById('mode-new-btn'),
+    existing: document.getElementById('mode-existing-btn'),
+    sell: document.getElementById('mode-sell-btn'),
+    div: document.getElementById('mode-div-btn'),
+  };
+  const modeForms = {
+    new: document.getElementById('txn-form-new'),
+    existing: document.getElementById('txn-form-existing'),
+    sell: document.getElementById('txn-form-sell'),
+    div: document.getElementById('txn-form-div'),
+  };
+  function setMode(mode){
+    Object.entries(modeBtns).forEach(([k,btn])=> btn.classList.toggle('active', k===mode));
+    Object.entries(modeForms).forEach(([k,form])=> form.style.display = (k===mode ? 'grid' : 'none'));
+    refreshIsinSelect();
+    if(mode!=='new' && Object.keys(allKnownIsins()).length===0){
+      Object.values(modeForms).forEach(f=>f.style.display='none');
+    }
+  }
+  modeBtns.new.addEventListener('click', ()=> setMode('new'));
+  modeBtns.existing.addEventListener('click', ()=> setMode('existing'));
+  modeBtns.sell.addEventListener('click', ()=> setMode('sell'));
+  modeBtns.div.addEventListener('click', ()=> setMode('div'));
+  document.getElementById('fs-isin').addEventListener('change', updateSellHoldingsNote);
+
+  document.getElementById('txn-form-new').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const errorEl = document.getElementById('form-error-new');
+    errorEl.style.display='none';
+    const ticker = document.getElementById('fn-ticker').value.trim();
+    const isin = document.getElementById('fn-isin').value.trim().toUpperCase();
+    const date = document.getElementById('fn-date').value;
+    const shares = Number(document.getElementById('fn-shares').value);
+    const price = Number(document.getElementById('fn-price').value);
+    const commission = Number(document.getElementById('fn-commission').value || 0);
+
+    if(!ticker || !isin || !date || !(shares>0) || !(price>0)){
+      errorEl.textContent = 'Revisa los campos: nombre, ISIN, fecha, nº de acciones y precio son obligatorios.';
+      errorEl.style.display='block'; return;
+    }
+    if(!/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){
+      errorEl.textContent = 'Ese ISIN no tiene el formato correcto (12 caracteres, ej. ES0148396007).';
+      errorEl.style.display='block'; return;
+    }
+    const existingIsins = allKnownIsins();
+    if(existingIsins[isin]){
+      errorEl.textContent = `Ese ISIN ya está registrado como "${existingIsins[isin]}". Usa "Ampliar".`;
+      errorEl.style.display='block'; return;
+    }
+    const sector = document.getElementById('fn-sector').value;
+    state.transactions.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), ticker, isin, date, shares, price, commission, type:'buy' });
+    state.sectors[isin] = sector;
+    await saveState();
+    e.target.reset();
+    document.getElementById('fn-commission').value = 0;
+    document.getElementById('fn-date').valueAsDate = new Date();
+    closeModal();
+    render();
+  });
+
+  document.getElementById('txn-form-existing').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const errorEl = document.getElementById('form-error-existing');
+    errorEl.style.display='none';
+    const isin = document.getElementById('fe-isin').value;
+    const known = allKnownIsins();
+    const ticker = known[isin];
+    const date = document.getElementById('fe-date').value;
+    const shares = Number(document.getElementById('fe-shares').value);
+    const price = Number(document.getElementById('fe-price').value);
+    const commission = Number(document.getElementById('fe-commission').value || 0);
+    if(!isin || !ticker || !date || !(shares>0) || !(price>0)){
+      errorEl.textContent = 'Revisa los campos: fecha, nº de acciones y precio son obligatorios.';
+      errorEl.style.display='block'; return;
+    }
+    state.transactions.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), ticker, isin, date, shares, price, commission, type:'buy' });
+    await saveState();
+    e.target.reset();
+    document.getElementById('fe-commission').value = 0;
+    document.getElementById('fe-date').valueAsDate = new Date();
+    closeModal();
+    render();
+  });
+
+  document.getElementById('txn-form-sell').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const errorEl = document.getElementById('form-error-sell');
+    errorEl.style.display='none';
+    document.getElementById('wash-sale-warning').style.display='none';
+    const isin = document.getElementById('fs-isin').value;
+    const known = allKnownIsins();
+    const ticker = known[isin];
+    const date = document.getElementById('fs-date').value;
+    const shares = Number(document.getElementById('fs-shares').value);
+    const price = Number(document.getElementById('fs-price').value);
+    const commission = Number(document.getElementById('fs-commission').value || 0);
+    if(!isin || !ticker || !date || !(shares>0) || !(price>0)){
+      errorEl.textContent = 'Revisa los campos: fecha, nº de acciones y precio son obligatorios.';
+      errorEl.style.display='block'; return;
+    }
+    const held = sharesHeldFor(isin);
+    if(shares > held){
+      errorEl.textContent = `Solo tienes ${fmtNum(held)} acciones de esta posición — no puedes vender más de las que tienes.`;
+      errorEl.style.display='block'; return;
+    }
+    state.transactions.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), ticker, isin, date, shares, price, commission, type:'sell' });
+    await saveState();
+    const updated = getPositions().find(p=>p.isin===isin);
+    e.target.reset();
+    document.getElementById('fs-commission').value = 0;
+    document.getElementById('fs-date').valueAsDate = new Date();
+    if(updated && updated.washFlags && updated.washFlags.includes(date)){
+      const warn = document.getElementById('wash-sale-warning');
+      warn.textContent = '⚠ Esta venta genera pérdida y has comprado esta misma acción a menos de 2 meses — Hacienda podría no permitirte deducir esta pérdida (regla de los 2 meses). Revísalo antes de declarar.';
+      warn.style.display = 'block';
+    } else {
+      closeModal();
+    }
+    render();
+  });
+
+  document.getElementById('txn-form-div').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const errorEl = document.getElementById('form-error-div');
+    errorEl.style.display='none';
+    const isin = document.getElementById('fd-isin').value;
+    const known = allKnownIsins();
+    const ticker = known[isin];
+    const date = document.getElementById('fd-date').value;
+    const amount = Number(document.getElementById('fd-amount').value);
+    if(!isin || !ticker || !date || !(amount>0)){
+      errorEl.textContent = 'Revisa los campos: fecha e importe son obligatorios.';
+      errorEl.style.display='block'; return;
+    }
+    state.dividends.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), ticker, isin, date, amount });
+    await saveState();
+    e.target.reset();
+    document.getElementById('fd-date').valueAsDate = new Date();
+    closeModal();
+    render();
+  });
+
+  document.getElementById('fn-date').valueAsDate = new Date();
+  document.getElementById('fe-date').valueAsDate = new Date();
+  document.getElementById('fs-date').valueAsDate = new Date();
+  document.getElementById('fd-date').valueAsDate = new Date();
+  refreshIsinSelect();
+
+  document.getElementById('bulk-import-btn').addEventListener('click', async ()=>{
+    const feedback = document.getElementById('bulk-feedback');
+    const raw = document.getElementById('bulk-input').value;
+    const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lines.length===0){ feedback.textContent = 'Escribe al menos una línea.'; feedback.className = 'err'; return; }
+    const today = new Date().toISOString().slice(0,10);
+    let imported = 0; let errors = [];
+    lines.forEach((line, idx)=>{
+      const parts = line.split(';').map(p=>p.trim());
+      if(parts.length !== 3 && parts.length !== 4){
+        errors.push('Línea '+(idx+1)+': usa el formato Nombre; nº acciones; precio medio; ISIN (opcional)'); return;
+      }
+      const [ticker, sharesStr, priceStr, isinRaw] = parts;
+      const shares = Number(sharesStr.replace(',', '.'));
+      const price = Number(priceStr.replace(',', '.'));
+      const isin = (isinRaw || '').toUpperCase();
+      if(!ticker || !(shares>0) || !(price>0)){ errors.push('Línea '+(idx+1)+': revisa nombre, nº de acciones y precio'); return; }
+      if(isin && !/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){
+        errors.push('Línea '+(idx+1)+': el ISIN "'+isin+'" no tiene el formato correcto, se importó sin ISIN');
+      }
+      const validIsin = isin && /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin) ? isin : undefined;
+      state.transactions.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7)+idx, ticker, isin: validIsin, date: today, shares, price, commission: 0 });
+      imported++;
+    });
+    if(imported>0){ await saveState(); render(); }
+    if(errors.length===0){
+      feedback.textContent = imported+' importada'+(imported===1?'':'s')+'.';
+      feedback.className = 'ok';
+      document.getElementById('bulk-input').value = '';
+    } else {
+      feedback.textContent = imported+' importadas, '+errors.length+' con error.';
+      feedback.className = 'err';
+    }
+  });
+
+  // ---------- Autenticación ----------
+  try{
+    firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{});
+  }catch(e){}
+
+  const authGate = document.getElementById('auth-gate');
+  const appEl = document.getElementById('app');
+  const authForm = document.getElementById('auth-form');
+  const authError = document.getElementById('auth-error');
+  const authLoading = document.getElementById('auth-loading');
+  const authSubmitBtn = document.getElementById('auth-submit-btn');
+
+  authForm.addEventListener('submit', async e=>{
+    e.preventDefault();
+    authError.style.display = 'none';
+    authSubmitBtn.disabled = true;
+    authSubmitBtn.textContent = 'Entrando…';
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    try{
+      await firebase.auth().signInWithEmailAndPassword(email, password);
+    }catch(err){
+      authError.textContent = 'No se pudo iniciar sesión: revisa el email y la contraseña (el usuario se crea desde la consola de Firebase, no aquí).';
+      authError.style.display = 'block';
+    }
+    authSubmitBtn.disabled = false;
+    authSubmitBtn.textContent = 'Iniciar sesión';
+  });
+
+  document.getElementById('sign-out-btn').addEventListener('click', async ()=>{
+    await firebase.auth().signOut();
+  });
+
+  firebase.auth().onAuthStateChanged(async user=>{
+    if(user){
+      currentUser = user;
+      authGate.style.display = 'none';
+      appEl.style.display = 'flex';
+      bindFirestore(user.uid);
+      await loadState();
+    } else {
+      currentUser = null;
+      if(firestoreUnsub){ firestoreUnsub(); firestoreUnsub = null; }
+      appEl.style.display = 'none';
+      authGate.style.display = 'flex';
+      authForm.style.display = 'block';
+      authLoading.style.display = 'none';
+    }
+  });
+})();
+</script>
+</body>
+</html>
