@@ -861,7 +861,7 @@
     return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   }
 
-  function renderAreaChart(values, color, w, h){
+  function renderAreaChart(values, color, w, h, unit){
     const pad = 10;
     if(values.length < 2) return '<p class="no-data">Todavía no hay suficientes puntos guardados para este rango.</p>';
     const min = Math.min(...values), max = Math.max(...values);
@@ -871,6 +871,7 @@
     const linePath = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
     const areaPath = linePath + ` L${pts[pts.length-1][0].toFixed(1)},${h-pad} L${pts[0][0].toFixed(1)},${h-pad} Z`;
     const gid = 'g'+Math.random().toString(36).slice(2,8);
+    const fmtAxis = v => unit==='pct' ? fmtPct(v) : fmtMoney(v);
     return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
       <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="${color}" stop-opacity="0.20"/>
@@ -879,6 +880,8 @@
       ${[0.25,0.5,0.75].map(f=>`<line x1="${pad}" y1="${pad+(h-pad*2)*f}" x2="${w-pad}" y2="${pad+(h-pad*2)*f}" stroke="#EEECF7" stroke-width="1"/>`).join('')}
       <path d="${areaPath}" fill="url(#${gid})" stroke="none"/>
       <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="${w-pad}" y="${pad+9}" font-size="10" text-anchor="end" fill="#8B8FA3">${fmtAxis(max)}</text>
+      <text x="${w-pad}" y="${h-pad-3}" font-size="10" text-anchor="end" fill="#8B8FA3">${fmtAxis(min)}</text>
     </svg>`;
   }
 
@@ -895,8 +898,11 @@
     return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
       ${[0.25,0.5,0.75].map(f=>`<line x1="${pad}" y1="${pad+(h-pad*2)*f}" x2="${w-pad}" y2="${pad+(h-pad*2)*f}" stroke="#EEECF7" stroke-width="1"/>`).join('')}
       <line x1="${pad}" y1="${zeroY}" x2="${w-pad}" y2="${zeroY}" stroke="#D8D4EE" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="${pad}" y="${Number(zeroY)-4}" font-size="9.5" fill="#A3A1B8">0% (punto de partida)</text>
       <path d="${pathFor(seriesB)}" fill="none" stroke="${colorB}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
       <path d="${pathFor(seriesA)}" fill="none" stroke="${colorA}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="${w-pad}" y="${pad+9}" font-size="10" text-anchor="end" fill="#8B8FA3">${fmtPct(max)}</text>
+      <text x="${w-pad}" y="${h-pad-3}" font-size="10" text-anchor="end" fill="#8B8FA3">${fmtPct(min)}</text>
     </svg>`;
   }
 
@@ -916,7 +922,12 @@
     const finalSimple = simpleSeries[simpleSeries.length-1];
     const finalCompound = compoundSeries[compoundSeries.length-1];
     const gid = 'gc'+Math.random().toString(36).slice(2,8);
+    const yearTicks = [0, Math.round(years/2), years];
     return `
+      <div style="display:flex;gap:16px;margin-bottom:8px;font-size:11px;">
+        <span style="color:var(--text-dim);"><span style="display:inline-block;width:14px;border-top:2px dashed #A3A1B8;margin-right:5px;vertical-align:middle;"></span>Interés simple</span>
+        <span style="color:var(--text-dim);"><span style="display:inline-block;width:14px;border-top:2.5px solid #00B894;margin-right:5px;vertical-align:middle;"></span>Interés compuesto</span>
+      </div>
       <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
         <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#00B894" stop-opacity="0.20"/>
@@ -926,6 +937,9 @@
         <path d="${pathFor(compoundSeries)} L${(pad+(steps-1)*stepX).toFixed(1)},${h-pad*0.6} L${pad},${h-pad*0.6} Z" fill="url(#${gid})" stroke="none"/>
         <path d="${pathFor(simpleSeries)}" fill="none" stroke="#A3A1B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5,4"/>
         <path d="${pathFor(compoundSeries)}" fill="none" stroke="#00B894" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="${w-pad}" y="${pad-8}" font-size="10" text-anchor="end" fill="#8B8FA3">${fmtMoney(max)}</text>
+        <text x="${pad}" y="${h-pad*0.6+2}" font-size="10" fill="#8B8FA3">${fmtMoney(principal)} hoy</text>
+        ${yearTicks.map(yr=>`<text x="${(pad+(yr)*stepX).toFixed(1)}" y="${h-4}" font-size="9.5" text-anchor="${yr===0?'start':yr===years?'end':'middle'}" fill="#A3A1B8">${yr===0?'Hoy':'Año '+yr}</text>`).join('')}
       </svg>
       <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">
         <span style="color:var(--text-dim);">Simple a ${years} años: <b style="color:var(--text);">${fmtMoney(finalSimple)}</b></span>
@@ -1312,8 +1326,12 @@
             <span class="evo-name">${escapeHtml(p.name)}</span>
             <div class="evo-metrics">
               <div class="evo-metric">
-                <div class="evo-metric-label">${evoRange==='hoy'?'Hoy':'Rango'}</div>
+                <div class="evo-metric-label" title="Variación del precio de mercado en este periodo (no tu rentabilidad personal)">${evoRange==='hoy'?'Precio hoy':'Precio en rango'} ⓘ</div>
                 <div class="${rangeChangePct===null?'':(rangeChangePct>=0?'pos':'neg')}">${rangeChangePct===null?'N/D':(rangeChangePct>=0?'+':'')+fmtPct(rangeChangePct)}</div>
+              </div>
+              <div class="evo-metric">
+                <div class="evo-metric-label" title="Tu resultado real desde que compraste, a tu precio medio">Desde tu compra</div>
+                <div class="${p.hasPrice?(p.pnlPct>=0?'pos':'neg'):''}">${p.hasPrice?((p.pnlPct>=0?'+':'')+fmtPct(p.pnlPct)):'—'}</div>
               </div>
               <span class="evo-chevron">&#9656;</span>
             </div>
@@ -1426,15 +1444,15 @@
   }
 
   const TABLE_COLS = [
-    {key:'name', label:'Acción', fmt:v=>escapeHtml(v)},
-    {key:'nops', label:'Op.', fmt:v=>v},
-    {key:'totalShares', label:'Acc.', fmt:v=>fmtNum(v)},
-    {key:'avgPrice', label:'P. medio', fmt:v=>fmtMoney(v)},
-    {key:'totalCost', label:'Invertido', fmt:v=>fmtMoney(v)},
-    {key:'currentPrice', label:'Actual', fmt:v=>v==null?'—':fmtMoney(v)},
-    {key:'currentValue', label:'Valor', fmt:v=>v==null?'—':fmtMoney(v)},
-    {key:'pnl', label:'Result. €', fmt:v=>v==null?'—':fmtMoney(v)},
-    {key:'pnlPct', label:'Result. %', fmt:v=>v==null?'—':fmtPct(v)}
+    {key:'name', label:'Acción', title:'Nombre de la acción', fmt:v=>escapeHtml(v)},
+    {key:'nops', label:'Op.', title:'Número de operaciones (compras y ventas) registradas', fmt:v=>v},
+    {key:'totalShares', label:'Acc.', title:'Nº de acciones que tienes ahora mismo', fmt:v=>fmtNum(v)},
+    {key:'avgPrice', label:'P. medio', title:'Precio medio de compra, comisiones incluidas', fmt:v=>fmtMoney(v)},
+    {key:'totalCost', label:'Invertido', title:'Dinero total puesto en esta posición ahora mismo', fmt:v=>fmtMoney(v)},
+    {key:'currentPrice', label:'Actual', title:'Precio de mercado más reciente', fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'currentValue', label:'Valor', title:'Lo que valdría hoy si la vendieras (acciones × precio actual)', fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'pnl', label:'Result. €', title:'Ganancia o pérdida no realizada, en euros (Valor − Invertido)', fmt:v=>v==null?'—':fmtMoney(v)},
+    {key:'pnlPct', label:'Result. %', title:'Ganancia o pérdida no realizada, en porcentaje', fmt:v=>v==null?'—':fmtPct(v)}
   ];
 
   function renderTabla(positions){
@@ -1533,7 +1551,7 @@
       </div>
     `;
 
-    let thead = '<tr>' + TABLE_COLS.map(c=>`<th data-key="${c.key}" class="${tableSort.key===c.key?'sorted':''}">${c.label}${tableSort.key===c.key?(tableSort.dir===1?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
+    let thead = '<tr>' + TABLE_COLS.map(c=>`<th data-key="${c.key}" title="${escapeHtml(c.title||'')}" class="${tableSort.key===c.key?'sorted':''}">${c.label}${tableSort.key===c.key?(tableSort.dir===1?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
     let tbody = rows.map(r=>{
       const p = positions.find(pp=>pp.key===r.key);
       const rowCls = selectedFilter ? (matchesFilter(p,selectedFilter) ? 'row-selected' : 'row-dim') : '';
