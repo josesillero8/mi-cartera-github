@@ -682,18 +682,32 @@
     if(flows.length < 2) return null;
     const hasPos = flows.some(f=>f.amount>0), hasNeg = flows.some(f=>f.amount<0);
     if(!hasPos || !hasNeg) return null;
-    let rate = 0.1;
-    for(let i=0;i<100;i++){
-      const npv = xnpv(rate, flows);
-      const d = 0.0001;
-      const deriv = (xnpv(rate+d, flows) - npv) / d;
-      if(Math.abs(deriv) < 1e-10) break;
-      const next = rate - npv/deriv;
-      if(!isFinite(next)) break;
-      if(Math.abs(next-rate) < 1e-7) { rate = next; break; }
-      rate = next;
+    const dates = flows.map(f=>f.date);
+    const spanDays = (Math.max(...dates) - Math.min(...dates)) / 86400000;
+    // Con menos de 2 semanas de historial, anualizar el resultado da números
+    // absurdos (una ganancia del 1% en 3 días "anualizada" son miles por
+    // ciento) — es matemáticamente correcto pero engañoso, así que se omite.
+    if(spanDays < 14) return null;
+
+    // Bisección: mucho más estable que Newton-Raphson cuando los flujos de
+    // caja están muy juntos en el tiempo (la derivada se vuelve casi plana).
+    let lo = -0.9999, hi = 10;
+    let npvLo = xnpv(lo, flows), npvHi = xnpv(hi, flows);
+    let tries = 0;
+    while(npvLo*npvHi > 0 && hi < 1e6 && tries < 60){
+      hi *= 2;
+      npvHi = xnpv(hi, flows);
+      tries++;
     }
-    return isFinite(rate) && rate > -0.999 ? rate*100 : null;
+    if(npvLo*npvHi > 0) return null; // no hay una tasa razonable que cuadre
+    for(let i=0;i<200;i++){
+      const mid = (lo+hi)/2;
+      const npvMid = xnpv(mid, flows);
+      if(Math.abs(npvMid) < 1e-6){ lo = hi = mid; break; }
+      if((npvMid>0) === (npvLo>0)){ lo = mid; npvLo = npvMid; } else { hi = mid; }
+    }
+    const rate = (lo+hi)/2;
+    return isFinite(rate) ? rate*100 : null;
   }
   function portfolioXIRR(positions){
     const flows = [];
@@ -1473,7 +1487,7 @@
           <div class="kpi-card"><p class="kpi-label">Dividendos</p><p class="kpi-value pos">${fmtMoney(fDividends)}</p></div>
           <div class="kpi-card" style="grid-column:1/-1;">
             <p class="kpi-label">TIR anualizada de ${escapeHtml(label)}</p>
-            <p class="kpi-value ${gXirr==null?'':(gXirr>=0?'pos':'neg')}">${gXirr==null?'— (faltan datos o precios)':fmtPct(gXirr)}</p>
+            <p class="kpi-value ${gXirr==null?'':(gXirr>=0?'pos':'neg')}">${gXirr==null?'— (necesitas al menos 2 semanas de historial)':fmtPct(gXirr)}</p>
             ${gXirr!=null ? `
             <div class="growth-chart-block" style="margin-top:12px;background:var(--card);">
               <p class="detail-item-label" style="margin-bottom:8px;">Si mantuvieras esta TIR: simple vs. interés compuesto a 20 años</p>
@@ -1497,7 +1511,7 @@
           <div class="kpi-card"><p class="kpi-label">Comisiones pagadas</p><p class="kpi-value">${fmtMoney(totals.totalCommission)}</p></div>
           <div class="kpi-card" style="grid-column:1/-1;">
             <p class="kpi-label">TIR anualizada (XIRR)</p>
-            <p class="kpi-value ${xirr==null?'':(xirr>=0?'pos':'neg')}">${xirr==null?'— (faltan datos o precios)':fmtPct(xirr)}</p>
+            <p class="kpi-value ${xirr==null?'':(xirr>=0?'pos':'neg')}">${xirr==null?'— (necesitas al menos 2 semanas de historial)':fmtPct(xirr)}</p>
             <p style="font-size:10.5px;color:var(--text-faint);margin:6px 0 0;line-height:1.4;">Rentabilidad real ponderada por cuándo metiste cada euro — la métrica que de verdad indica si tu timing de entradas fue bueno, no solo cuánto ha subido el precio.</p>
             ${xirr!=null ? `
             <div class="growth-chart-block" style="margin-top:12px;background:var(--card);">
