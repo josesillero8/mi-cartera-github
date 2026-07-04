@@ -154,6 +154,9 @@
   .move-row.open .move-chevron{transform:rotate(90deg);}
   .move-detail-content{padding:14px 16px 18px;border-top:1px solid var(--border);}
   .detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  .xirr-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:var(--purple-soft);border-radius:14px;padding:12px 14px;margin-top:14px;}
+  .xirr-hint{font-size:11px;color:var(--text-dim);margin:8px 2px 0;line-height:1.5;}
+  .growth-chart-block{background:var(--card-alt);border-radius:14px;padding:14px;margin-top:14px;}
   .detail-item-label{font-size:10.5px;color:var(--text-faint);margin-bottom:5px;font-weight:500;}
   .detail-item-value{font-size:13.5px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
 
@@ -202,9 +205,11 @@
   .exposure-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:20px;}
   .exposure-block{background:var(--card);border-radius:18px;padding:18px 18px 8px;box-shadow:var(--shadow);}
   .exposure-bar{display:flex;height:14px;border-radius:8px;overflow:hidden;background:var(--card-alt);margin-bottom:12px;}
-  .exposure-seg{height:100%;min-width:2px;}
+  .exposure-seg{height:100%;min-width:2px;cursor:pointer;transition:opacity 0.15s;}
+  .exposure-seg.dim{opacity:0.25;}
   .exposure-legend{display:flex;flex-direction:column;gap:2px;}
-  .exposure-legend-item{display:flex;align-items:center;gap:9px;padding:7px 4px;font-size:12px;}
+  .exposure-legend-item{display:flex;align-items:center;gap:9px;padding:7px 4px;font-size:12px;cursor:pointer;border-radius:10px;}
+  .exposure-legend-item.active{background:var(--purple-soft);padding-left:8px;padding-right:8px;}
   .exposure-legend-item .legend-name{flex:1;color:var(--text);font-weight:600;}
   .exposure-legend-item .legend-pct{color:var(--text-dim);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;}
   @media (min-width:640px){ .exposure-grid{grid-template-columns:1fr 1fr;} }
@@ -521,7 +526,21 @@
   let selectedBenchmark = null;
   let openEvoRows = new Set();
   let tableSort = { key: 'totalCost', dir: -1 };
-  let selectedKey = null;
+  let selectedFilter = null; // { type: 'position'|'currency'|'sector', value }
+
+  function matchesFilter(p, filter){
+    if(!filter) return true;
+    if(filter.type==='position') return p.key === filter.value;
+    if(filter.type==='currency') return (p.currency||'EUR') === filter.value;
+    if(filter.type==='sector') return (p.sector||'Sin clasificar') === filter.value;
+    return true;
+  }
+  function filterLabel(filter){
+    if(!filter) return '';
+    if(filter.type==='currency') return 'divisa ' + filter.value;
+    if(filter.type==='sector') return filter.value;
+    return filter.value;
+  }
   const PALETTE = ['#6C5CE7','#00B894','#E17055','#0984E3','#FDCB6E','#E84393','#00CEC9','#636E72','#A29BFE','#55EFC4'];
   const SECTOR_OPTIONS = ['Sin clasificar','Tecnología','Finanzas','Energía','Salud','Consumo','Industrial','Materias primas','Inmobiliario','Comunicación','Utilities','Fondos / ETF','Otro'];
   const SECTION_LABELS = { noticias:'Tus acciones', evolucion:'Evolución', tabla:'Resumen' };
@@ -692,6 +711,43 @@
     return calcXIRR(flows);
   }
 
+  function positionXIRR(p){
+    const flows = [];
+    p.ops.forEach(o=>{
+      const d = new Date(o.date).getTime();
+      const amount = o.type==='sell' ? (o.shares*o.price - (o.commission||0)) : -(o.shares*o.price + (o.commission||0));
+      flows.push({date:d, amount});
+    });
+    (state.dividends||[]).filter(d=>d.isin && p.isin && d.isin.toUpperCase()===p.isin).forEach(dv=>{
+      flows.push({date:new Date(dv.date).getTime(), amount:Number(dv.amount||0)});
+    });
+    const finalValue = p.hasPrice ? p.currentValue : (p.isClosed ? 0 : p.totalCost);
+    if(finalValue > 0 || p.isClosed) flows.push({date: Date.now(), amount: finalValue});
+    flows.sort((a,b)=>a.date-b.date);
+    return calcXIRR(flows);
+  }
+
+  // TIR de cualquier grupo de posiciones (una acción, todas las de una divisa, o todas las de un sector)
+  function groupXIRR(matchedPositions){
+    if(matchedPositions.length === 1) return positionXIRR(matchedPositions[0]);
+    const isins = new Set(matchedPositions.map(p=>p.isin).filter(Boolean));
+    const flows = [];
+    matchedPositions.forEach(p=>{
+      p.ops.forEach(o=>{
+        const d = new Date(o.date).getTime();
+        const amount = o.type==='sell' ? (o.shares*o.price - (o.commission||0)) : -(o.shares*o.price + (o.commission||0));
+        flows.push({date:d, amount});
+      });
+    });
+    (state.dividends||[]).forEach(dv=>{
+      if(dv.isin && isins.has(dv.isin.toUpperCase())) flows.push({date:new Date(dv.date).getTime(), amount:Number(dv.amount||0)});
+    });
+    const finalValue = matchedPositions.reduce((s,p)=> s + (p.hasPrice ? p.currentValue : (p.isClosed?0:p.totalCost)), 0);
+    if(finalValue > 0) flows.push({date: Date.now(), amount: finalValue});
+    flows.sort((a,b)=>a.date-b.date);
+    return calcXIRR(flows);
+  }
+
   function getPositions(){
 
     const map = {};
@@ -830,6 +886,40 @@
     </svg>`;
   }
 
+  function renderSimpleVsCompoundChart(principal, annualRatePct, years, w, h){
+    if(principal<=0 || annualRatePct==null) return '<p class="no-data">Faltan datos (precio o TIR) para proyectar esta comparación.</p>';
+    const r = annualRatePct/100;
+    const pad = 26;
+    const steps = years+1;
+    const simpleSeries = Array.from({length:steps}, (_,t)=> principal*(1+r*t));
+    const compoundSeries = Array.from({length:steps}, (_,t)=> principal*Math.pow(1+r,t));
+    const all = simpleSeries.concat(compoundSeries);
+    const min = Math.min(0,...all), max = Math.max(...all);
+    const range = (max-min) || 1;
+    const stepX = (w-pad*2) / (steps-1);
+    const pathFor = series => series.map((v,i)=>[pad+i*stepX, pad+(h-pad*1.6)*(1-(v-min)/range)])
+      .map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+    const finalSimple = simpleSeries[simpleSeries.length-1];
+    const finalCompound = compoundSeries[compoundSeries.length-1];
+    const gid = 'gc'+Math.random().toString(36).slice(2,8);
+    return `
+      <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#00B894" stop-opacity="0.20"/>
+          <stop offset="100%" stop-color="#00B894" stop-opacity="0"/>
+        </linearGradient></defs>
+        ${[0.25,0.5,0.75].map(f=>`<line x1="${pad}" y1="${pad+(h-pad*1.6)*f}" x2="${w-pad}" y2="${pad+(h-pad*1.6)*f}" stroke="#EEECF7" stroke-width="1"/>`).join('')}
+        <path d="${pathFor(compoundSeries)} L${(pad+(steps-1)*stepX).toFixed(1)},${h-pad*0.6} L${pad},${h-pad*0.6} Z" fill="url(#${gid})" stroke="none"/>
+        <path d="${pathFor(simpleSeries)}" fill="none" stroke="#A3A1B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5,4"/>
+        <path d="${pathFor(compoundSeries)}" fill="none" stroke="#00B894" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">
+        <span style="color:var(--text-dim);">Simple a ${years} años: <b style="color:var(--text);">${fmtMoney(finalSimple)}</b></span>
+        <span style="color:var(--text-dim);">Compuesto a ${years} años: <b style="color:#00B894;">${fmtMoney(finalCompound)}</b></span>
+      </div>
+    `;
+  }
+
   function renderFavourites(positions){
     const wrap = document.getElementById('fav-scroll');
     const top = positions.slice(0,5);
@@ -930,6 +1020,7 @@
       const changeCls = p.isClosed ? 'flat' : (!p.hasPrice ? 'flat' : (p.pnlPct>=0?'pos':'neg'));
       const changeTxt = p.isClosed ? 'Cerrada' : (!p.hasPrice ? 'Sin precio' : (p.pnlPct>=0?'+':'')+fmtPct(p.pnlPct));
       const hasWash = p.washFlags && p.washFlags.length>0;
+      const pxirr = positionXIRR(p);
       const noteVal = state.notes[p.key] || '';
       return `
         <div class="move-row ${open?'open':''}" data-key="${p.key}">
@@ -956,6 +1047,13 @@
               <div><div class="detail-item-label">Comisiones pagadas</div><div class="detail-item-value">${fmtMoney(p.totalCommission)}</div></div>
               <div><div class="detail-item-label">Operaciones</div><div class="detail-item-value">${p.ops.length}</div></div>
             </div>
+            ${p.hasPrice||p.isClosed ? `
+            <div class="xirr-compare">
+              <div><div class="detail-item-label">Resultado total (%)</div><div class="detail-item-value ${p.hasPrice?(p.pnlPct>=0?'pos':'neg'):''}">${p.hasPrice?fmtPct(p.pnlPct):'—'}</div></div>
+              <div><div class="detail-item-label">TIR anualizada</div><div class="detail-item-value ${pxirr==null?'':(pxirr>=0?'pos':'neg')}">${pxirr==null?'—':fmtPct(pxirr)}</div></div>
+            </div>
+            ${p.ops.length>1 ? `<p class="xirr-hint">La TIR anualizada tiene en cuenta cuándo hiciste cada una de tus ${p.ops.length} operaciones — es la que de verdad indica si el ritmo de esta inversión es bueno. Mira "Tabla resumen" para ver la proyección simple vs. compuesto.</p>` : ''}
+            ` : ''}
             ${hasWash?`<p style="color:var(--red);font-size:11.5px;font-weight:600;margin:12px 0 0;">⚠ Alguna venta con pérdidas de esta acción tiene una compra a menos de 2 meses — revisa la regla de los 2 meses antes de declarar.</p>`:''}
             <div class="ops-list">
               <p class="ops-list-label">Tus operaciones — toca ✎ para corregir un dato</p>
@@ -1230,7 +1328,7 @@
     });
   }
 
-  function renderExposureBar(positions, field, title){
+  function renderExposureBar(positions, field, title, filter){
     const total = positions.reduce((s,p)=>s+p.totalCost,0);
     const groups = {};
     positions.forEach(p=>{
@@ -1244,14 +1342,20 @@
     const segs = entries.map(([label,value],i)=>({
       label, value, pct: value/total*100, color: PALETTE[i % PALETTE.length]
     }));
-    const bar = segs.map(s=>`<div class="exposure-seg" style="width:${s.pct}%;background:${s.color};" title="${escapeHtml(s.label)}: ${fmtPct(s.pct)}"></div>`).join('');
-    const legend = segs.map(s=>`
-      <div class="exposure-legend-item">
+    const bar = segs.map(s=>{
+      const dim = filter && !(filter.type===field && filter.value===s.label) ? 'dim' : '';
+      return `<div class="exposure-seg ${dim}" data-field="${field}" data-value="${escapeHtml(s.label)}" style="width:${s.pct}%;background:${s.color};" title="${escapeHtml(s.label)}: ${fmtPct(s.pct)}"></div>`;
+    }).join('');
+    const legend = segs.map(s=>{
+      const active = filter && filter.type===field && filter.value===s.label;
+      return `
+      <div class="exposure-legend-item ${active?'active':''}" data-field="${field}" data-value="${escapeHtml(s.label)}">
         <span class="legend-dot" style="background:${s.color}"></span>
         <span class="legend-name">${escapeHtml(s.label)}</span>
         <span class="legend-pct">${fmtPct(s.pct)}</span>
       </div>
-    `).join('');
+    `;
+    }).join('');
     return `
       <div class="exposure-block">
         <p class="evo-chart-label">${title}</p>
@@ -1261,7 +1365,7 @@
     `;
   }
 
-  function renderDonut(positions, selKey){
+  function renderDonut(positions, filter){
     const size = 160, stroke = 22, r = (size-stroke)/2, c = 2*Math.PI*r;
     const total = positions.reduce((s,p)=>s+p.totalCost,0);
     let offset = 0;
@@ -1273,18 +1377,19 @@
       return seg;
     });
     const circles = segs.map(seg=>{
-      const dim = selKey && seg.p.key !== selKey ? 'dim' : '';
+      const dim = filter && !matchesFilter(seg.p, filter) ? 'dim' : '';
       return `<circle class="donut-seg ${dim}" data-key="${seg.p.key}" cx="${size/2}" cy="${size/2}" r="${r}"
         fill="none" stroke="${seg.color}" stroke-width="${stroke}"
         stroke-dasharray="${seg.dasharray}" stroke-dashoffset="${seg.dashoffset}"
         transform="rotate(-90 ${size/2} ${size/2})"/>`;
     }).join('');
 
-    const selPos = selKey ? positions.find(p=>p.key===selKey) : null;
-    const centerValue = selPos ? fmtPct((selPos.totalCost/total)*100) : fmtMoney(total);
+    const matched = filter ? positions.filter(p=>matchesFilter(p,filter)) : [];
+    const matchedCost = matched.reduce((s,p)=>s+p.totalCost,0);
+    const centerValue = filter ? fmtPct((matchedCost/total)*100) : fmtMoney(total);
 
     const legend = segs.map(seg=>{
-      const active = selKey === seg.p.key;
+      const active = filter && filter.type==='position' && filter.value===seg.p.key;
       return `<div class="legend-item ${active?'active':''}" data-key="${seg.p.key}">
         <span class="legend-dot" style="background:${seg.color}"></span>
         <span class="legend-name">${escapeHtml(seg.p.name)}</span>
@@ -1297,7 +1402,7 @@
         <div class="donut-svg-wrap">
           <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${circles}</svg>
           <div class="donut-center">
-            <p class="donut-center-label">${selPos?'% de la cartera':'Invertido'}</p>
+            <p class="donut-center-label">${filter?'% de la cartera':'Invertido'}</p>
             <p class="donut-center-value">${centerValue}</p>
           </div>
         </div>
@@ -1346,19 +1451,37 @@
       totalCommission: rows.reduce((s,r)=> s+(r.totalCommission||0),0),
     };
 
-    const sel = selectedKey ? rows.find(r=>r.key===selectedKey) : null;
+    const filteredPositions = selectedFilter ? positions.filter(p=>matchesFilter(p,selectedFilter)) : [];
     const xirr = portfolioXIRR(positions);
     let kpiHtml;
-    if(sel){
-      const pctOfPortfolio = totals.totalCost>0 ? (sel.totalCost/totals.totalCost*100) : 0;
+    if(selectedFilter && filteredPositions.length){
+      const fInvested = filteredPositions.reduce((s,p)=>s+p.totalCost,0);
+      const fValue = filteredPositions.reduce((s,p)=> s+(p.currentValue??0),0);
+      const fPnl = filteredPositions.reduce((s,p)=> s+(p.pnl??0),0);
+      const fRealized = filteredPositions.reduce((s,p)=> s+(p.realizedPnl||0),0);
+      const fDividends = filteredPositions.reduce((s,p)=> s+(p.dividends||0),0);
+      const pctOfPortfolio = totals.totalCost>0 ? (fInvested/totals.totalCost*100) : 0;
+      const label = filterLabel(selectedFilter);
+      const gXirr = groupXIRR(filteredPositions);
       kpiHtml = `
         <div class="kpi-row">
-          <div class="kpi-card"><p class="kpi-label">Invertido en ${escapeHtml(sel.name)}</p><p class="kpi-value">${fmtMoney(sel.totalCost)}</p></div>
-          <div class="kpi-card"><p class="kpi-label">Valor actual</p><p class="kpi-value">${sel.currentValue==null?'—':fmtMoney(sel.currentValue)}</p></div>
-          <div class="kpi-card"><p class="kpi-label">Resultado</p><p class="kpi-value ${sel.pnl==null?'':(sel.pnl>=0?'pos':'neg')}">${sel.pnl==null?'—':fmtMoney(sel.pnl)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Invertido en ${escapeHtml(label)}</p><p class="kpi-value">${fmtMoney(fInvested)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Valor actual</p><p class="kpi-value">${fmtMoney(fValue)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Resultado</p><p class="kpi-value ${fPnl>=0?'pos':'neg'}">${fmtMoney(fPnl)}</p></div>
           <div class="kpi-card"><p class="kpi-label">% de tu cartera</p><p class="kpi-value">${fmtPct(pctOfPortfolio)}</p></div>
-          <div class="kpi-card"><p class="kpi-label">Ganancia realizada</p><p class="kpi-value ${sel.realizedPnl>=0?'pos':'neg'}">${fmtMoney(sel.realizedPnl)}</p></div>
-          <div class="kpi-card"><p class="kpi-label">Dividendos</p><p class="kpi-value pos">${fmtMoney(sel.dividends)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Ganancia realizada</p><p class="kpi-value ${fRealized>=0?'pos':'neg'}">${fmtMoney(fRealized)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Dividendos</p><p class="kpi-value pos">${fmtMoney(fDividends)}</p></div>
+          <div class="kpi-card" style="grid-column:1/-1;">
+            <p class="kpi-label">TIR anualizada de ${escapeHtml(label)}</p>
+            <p class="kpi-value ${gXirr==null?'':(gXirr>=0?'pos':'neg')}">${gXirr==null?'— (faltan datos o precios)':fmtPct(gXirr)}</p>
+            ${gXirr!=null ? `
+            <div class="growth-chart-block" style="margin-top:12px;background:var(--card);">
+              <p class="detail-item-label" style="margin-bottom:8px;">Si mantuvieras esta TIR: simple vs. interés compuesto a 20 años</p>
+              ${renderSimpleVsCompoundChart(fValue, gXirr, 20, 680, 160)}
+              <p class="xirr-hint">Proyección ilustrativa a partir de la TIR real hasta hoy de ${escapeHtml(label)} — no es una predicción ni garantía de rentabilidad futura.</p>
+            </div>
+            ` : ''}
+          </div>
           <button class="kpi-clear" id="kpi-clear-btn">✕ Ver cartera completa</button>
         </div>
       `;
@@ -1376,22 +1499,30 @@
             <p class="kpi-label">TIR anualizada (XIRR)</p>
             <p class="kpi-value ${xirr==null?'':(xirr>=0?'pos':'neg')}">${xirr==null?'— (faltan datos o precios)':fmtPct(xirr)}</p>
             <p style="font-size:10.5px;color:var(--text-faint);margin:6px 0 0;line-height:1.4;">Rentabilidad real ponderada por cuándo metiste cada euro — la métrica que de verdad indica si tu timing de entradas fue bueno, no solo cuánto ha subido el precio.</p>
+            ${xirr!=null ? `
+            <div class="growth-chart-block" style="margin-top:12px;background:var(--card);">
+              <p class="detail-item-label" style="margin-bottom:8px;">Si mantuvieras esta TIR: simple vs. interés compuesto a 20 años</p>
+              ${renderSimpleVsCompoundChart(totals.currentValue, xirr, 20, 680, 160)}
+              <p class="xirr-hint">Proyección ilustrativa a partir de tu TIR real hasta hoy — no es una predicción ni garantía de rentabilidad futura.</p>
+            </div>
+            ` : ''}
           </div>
         </div>
       `;
     }
 
-    const donutHtml = renderDonut(positions, selectedKey);
+    const donutHtml = renderDonut(positions, selectedFilter);
     const exposureHtml = `
       <div class="exposure-grid">
-        ${renderExposureBar(positions, 'currency', 'Exposición por divisa')}
-        ${renderExposureBar(positions, 'sector', 'Exposición por sector')}
+        ${renderExposureBar(positions, 'currency', 'Exposición por divisa', selectedFilter)}
+        ${renderExposureBar(positions, 'sector', 'Exposición por sector', selectedFilter)}
       </div>
     `;
 
     let thead = '<tr>' + TABLE_COLS.map(c=>`<th data-key="${c.key}" class="${tableSort.key===c.key?'sorted':''}">${c.label}${tableSort.key===c.key?(tableSort.dir===1?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
     let tbody = rows.map(r=>{
-      const rowCls = selectedKey ? (r.key===selectedKey ? 'row-selected' : 'row-dim') : '';
+      const p = positions.find(pp=>pp.key===r.key);
+      const rowCls = selectedFilter ? (matchesFilter(p,selectedFilter) ? 'row-selected' : 'row-dim') : '';
       return `<tr class="${rowCls}" data-key="${r.key}">` + TABLE_COLS.map(c=>{
         let cellClass = '';
         if((c.key==='pnl'||c.key==='pnlPct') && r[c.key]!=null) cellClass = r[c.key]>=0 ? 'pos':'neg';
@@ -1418,21 +1549,27 @@
       });
     });
 
-    function toggleSelect(key){
-      selectedKey = (selectedKey === key) ? null : key;
+    function toggleFilter(type, value){
+      selectedFilter = (selectedFilter && selectedFilter.type===type && selectedFilter.value===value) ? null : {type, value};
       renderActiveTab();
     }
     wrap.querySelectorAll('.donut-seg').forEach(seg=>{
-      seg.addEventListener('click', ()=> toggleSelect(seg.dataset.key));
+      seg.addEventListener('click', ()=> toggleFilter('position', seg.dataset.key));
     });
     wrap.querySelectorAll('.legend-item').forEach(item=>{
-      item.addEventListener('click', ()=> toggleSelect(item.dataset.key));
+      item.addEventListener('click', ()=> toggleFilter('position', item.dataset.key));
+    });
+    wrap.querySelectorAll('.exposure-seg[data-field]').forEach(seg=>{
+      seg.addEventListener('click', ()=> toggleFilter(seg.dataset.field, seg.dataset.value));
+    });
+    wrap.querySelectorAll('.exposure-legend-item[data-field]').forEach(item=>{
+      item.addEventListener('click', ()=> toggleFilter(item.dataset.field, item.dataset.value));
     });
     wrap.querySelectorAll('tbody tr[data-key]').forEach(tr=>{
-      tr.addEventListener('click', ()=> toggleSelect(tr.dataset.key));
+      tr.addEventListener('click', ()=> toggleFilter('position', tr.dataset.key));
     });
     const clearBtn = document.getElementById('kpi-clear-btn');
-    if(clearBtn) clearBtn.addEventListener('click', ()=>{ selectedKey = null; renderActiveTab(); });
+    if(clearBtn) clearBtn.addEventListener('click', ()=>{ selectedFilter = null; renderActiveTab(); });
   }
 
   document.querySelectorAll('.nav-item').forEach(btn=>{
