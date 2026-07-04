@@ -255,6 +255,64 @@
 
   @media (min-width:540px){ .fab{right:calc(50vw - 240px + 18px);} }
 
+  /* ===== Escritorio: contenedor neutro en móvil, elementos exclusivos de escritorio ocultos ===== */
+  .main-col{display:contents;}
+  .sidebar-brand{display:none;}
+  .sidebar-add-btn{display:none;}
+
+  @media (min-width:900px){
+    body{display:flex;justify-content:center;background:var(--bg);}
+    .phone{
+      max-width:1080px;width:100%;
+      display:grid;
+      grid-template-columns:230px 1fr;
+      grid-template-rows:1fr;
+      min-height:100vh;
+    }
+    .main-col{
+      display:block;
+      grid-column:2;
+      overflow-y:auto;
+      border-left:1px solid var(--border);
+    }
+    .bottom-nav{
+      grid-column:1;grid-row:1;position:static;
+      flex-direction:column;align-items:stretch;
+      background:transparent;backdrop-filter:none;box-shadow:none;border-top:none;
+      padding:22px 14px;gap:3px;height:100vh;position:sticky;top:0;
+    }
+    .sidebar-brand{
+      display:flex;align-items:center;gap:9px;padding:6px 10px 22px;
+    }
+    .nav-item{
+      flex-direction:row;justify-content:flex-start;gap:11px;
+      padding:11px 14px;border-radius:12px;
+    }
+    .nav-item svg{width:19px;height:19px;}
+    .nav-item span{font-size:13.5px;}
+    .nav-item.active{background:var(--purple-soft);}
+    .sidebar-add-btn{
+      display:block;margin-top:14px;padding:12px;background:var(--purple);color:#fff;
+      border:none;border-radius:14px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;
+      font-size:13.5px;cursor:pointer;box-shadow:0 8px 18px rgba(108,92,231,0.28);
+    }
+    .sidebar-add-btn:hover{opacity:0.9;}
+    .fab{display:none;}
+
+    .topbar{padding:26px 36px 10px;}
+    .hero{padding:14px 36px 20px;}
+    .fav-scroll{padding:16px 36px 4px;}
+    .content-scroll{padding:22px 36px 60px;max-width:760px;}
+
+    .sheet-overlay{align-items:center;justify-content:center;}
+    .sheet{
+      position:static;max-width:480px;max-height:82vh;border-radius:22px;
+      transform:scale(0.95);opacity:0;transition:transform 0.2s ease, opacity 0.2s ease;
+    }
+    .sheet-overlay.open .sheet{transform:scale(1);opacity:1;}
+    .sheet-handle{display:none;}
+  }
+
   /* ===== Auth gate ===== */
   #auth-gate{
     min-height:100vh;display:flex;align-items:center;justify-content:center;
@@ -292,32 +350,35 @@
 
 <div id="app" style="display:none;">
   <div class="phone">
-    <div class="topbar">
-      <div class="brand"><div class="mono">MC</div><span class="brand-title">Mi Cartera</span></div>
-      <div style="text-align:right;">
-        <p class="sync-status" id="sync-status"></p>
-        <button class="sign-out-btn" id="sign-out-btn">Cerrar sesión</button>
+    <div class="main-col">
+      <div class="topbar">
+        <div class="brand"><div class="mono">MC</div><span class="brand-title">Mi Cartera</span></div>
+        <div style="text-align:right;">
+          <p class="sync-status" id="sync-status"></p>
+          <button class="sign-out-btn" id="sign-out-btn">Cerrar sesión</button>
+        </div>
       </div>
-    </div>
 
-    <div class="hero">
-      <p class="hero-label">Valor total de tu cartera</p>
-      <div class="hero-value-row">
-        <p class="hero-value" id="hero-value">—</p>
-        <span class="hero-change" id="hero-change"></span>
+      <div class="hero">
+        <p class="hero-label">Valor total de tu cartera</p>
+        <div class="hero-value-row">
+          <p class="hero-value" id="hero-value">—</p>
+          <span class="hero-change" id="hero-change"></span>
+        </div>
       </div>
-    </div>
 
-    <div class="fav-scroll" id="fav-scroll"></div>
+      <div class="fav-scroll" id="fav-scroll"></div>
 
-    <div class="content-scroll">
-      <p class="section-label" id="section-label">Tus acciones</p>
-      <div class="tab-content" id="tab-content"></div>
+      <div class="content-scroll">
+        <p class="section-label" id="section-label">Tus acciones</p>
+        <div class="tab-content" id="tab-content"></div>
+      </div>
     </div>
 
     <button class="fab" id="open-modal-btn">+</button>
 
     <nav class="bottom-nav">
+      <div class="sidebar-brand"><div class="mono">MC</div><span class="brand-title">Mi Cartera</span></div>
       <button class="nav-item active" data-tab="noticias">
         <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
         <span>Noticias</span>
@@ -330,6 +391,7 @@
         <svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M9 4.5v15"/></svg>
         <span>Tabla</span>
       </button>
+      <button class="sidebar-add-btn" id="open-modal-btn-desktop">+ Añadir operación</button>
     </nav>
   </div>
 
@@ -1257,11 +1319,13 @@
   });
 
   const modalOverlay = document.getElementById('modal-overlay');
-  document.getElementById('open-modal-btn').addEventListener('click', ()=>{
+  function openModal(){
     modalOverlay.classList.add('open');
     document.body.style.overflow = 'hidden';
     refreshIsinSelect();
-  });
+  }
+  document.getElementById('open-modal-btn').addEventListener('click', openModal);
+  document.getElementById('open-modal-btn-desktop').addEventListener('click', openModal);
   function closeModal(){
     modalOverlay.classList.remove('open');
     document.body.style.overflow = '';
