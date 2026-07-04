@@ -193,6 +193,15 @@
   .kpi-clear:active{opacity:0.8;}
 
   .donut-section{display:flex;flex-direction:column;gap:18px;margin-bottom:20px;background:var(--card);border-radius:20px;padding:20px 18px;box-shadow:var(--shadow);}
+  .exposure-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:20px;}
+  .exposure-block{background:var(--card);border-radius:18px;padding:18px 18px 8px;box-shadow:var(--shadow);}
+  .exposure-bar{display:flex;height:14px;border-radius:8px;overflow:hidden;background:var(--card-alt);margin-bottom:12px;}
+  .exposure-seg{height:100%;min-width:2px;}
+  .exposure-legend{display:flex;flex-direction:column;gap:2px;}
+  .exposure-legend-item{display:flex;align-items:center;gap:9px;padding:7px 4px;font-size:12px;}
+  .exposure-legend-item .legend-name{flex:1;color:var(--text);font-weight:600;}
+  .exposure-legend-item .legend-pct{color:var(--text-dim);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;}
+  @media (min-width:640px){ .exposure-grid{grid-template-columns:1fr 1fr;} }
   .donut-svg-wrap{position:relative;align-self:center;}
   .donut-seg{cursor:pointer;transition:opacity 0.15s;}
   .donut-seg.dim{opacity:0.25;}
@@ -414,6 +423,24 @@
           <div class="field"><label>Nº acciones</label><input type="number" id="fn-shares" step="any" min="0" placeholder="0" required></div>
           <div class="field"><label>Precio compra (€)</label><input type="number" id="fn-price" step="any" min="0" placeholder="0.00" required></div>
           <div class="field"><label>Comisión (€)</label><input type="number" id="fn-commission" step="any" min="0" placeholder="0.00" value="0"></div>
+          <div class="field" style="grid-column:1/-1;">
+            <label>Sector</label>
+            <select id="fn-sector">
+              <option value="Sin clasificar">Sin clasificar</option>
+              <option value="Tecnología">Tecnología</option>
+              <option value="Finanzas">Finanzas</option>
+              <option value="Energía">Energía</option>
+              <option value="Salud">Salud</option>
+              <option value="Consumo">Consumo</option>
+              <option value="Industrial">Industrial</option>
+              <option value="Materias primas">Materias primas</option>
+              <option value="Inmobiliario">Inmobiliario</option>
+              <option value="Comunicación">Comunicación</option>
+              <option value="Utilities">Utilities (energía/agua reguladas)</option>
+              <option value="Fondos / ETF">Fondos / ETF diversificados</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
           <button type="submit" class="add-btn">Añadir</button>
           <div class="form-error" id="form-error-new" style="display:none;"></div>
         </form>
@@ -479,7 +506,7 @@
 
 <script>
 (function(){
-  let state = { transactions: [], currentPrices: {}, dividends: [], notes: {} };
+  let state = { transactions: [], currentPrices: {}, dividends: [], notes: {}, sectors: {} };
   let remotePrices = null;
   let remoteHistory = null;
   let activeTab = 'noticias';
@@ -490,6 +517,7 @@
   let tableSort = { key: 'totalCost', dir: -1 };
   let selectedKey = null;
   const PALETTE = ['#6C5CE7','#00B894','#E17055','#0984E3','#FDCB6E','#E84393','#00CEC9','#636E72','#A29BFE','#55EFC4'];
+  const SECTOR_OPTIONS = ['Sin clasificar','Tecnología','Finanzas','Energía','Salud','Consumo','Industrial','Materias primas','Inmobiliario','Comunicación','Utilities','Fondos / ETF','Otro'];
   const SECTION_LABELS = { noticias:'Tus acciones', evolucion:'Evolución', tabla:'Resumen' };
 
   const fmtMoney = n => (isFinite(n)?n:0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
@@ -525,6 +553,7 @@
       state.currentPrices = data.currentPrices || {};
       state.dividends = data.dividends || [];
       state.notes = data.notes || {};
+      state.sectors = data.sectors || {};
       render();
     }, err=>{
       console.error('Error de sincronización', err);
@@ -540,6 +569,7 @@
         currentPrices: state.currentPrices,
         dividends: state.dividends,
         notes: state.notes,
+        sectors: state.sectors,
       });
     }catch(e){ console.error('Error guardando', e); }
   }
@@ -711,10 +741,14 @@
         .filter(d => d.isin && data.isin && d.isin.toUpperCase()===data.isin)
         .reduce((s,d)=>s+Number(d.amount||0),0);
 
+      const sector = state.sectors[data.isin] || state.sectors[key] || 'Sin clasificar';
+      const currency = (remote && remote.originalCurrency) || 'EUR';
+
       return {
         key, name:data.display, isin:data.isin, ops, totalShares, totalCost, avgPrice,
         currentPrice, hasPrice, isAuto, currentValue, pnl, pnlPct,
-        realizedPnl, totalCommission, dividends, washFlags, isClosed: totalShares<=0 && buys.length>0
+        realizedPnl, totalCommission, dividends, washFlags, isClosed: totalShares<=0 && buys.length>0,
+        sector, currency
       };
     }).sort((a,b)=> b.totalCost - a.totalCost);
   }
@@ -905,6 +939,12 @@
               `).join('')}
             </div>
             <div style="margin-top:14px;">
+              <div class="detail-item-label" style="margin-bottom:6px;">Sector</div>
+              <select class="sector-input" data-isin="${p.isin}" data-key="${p.key}" style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-alt);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;">
+                ${SECTOR_OPTIONS.map(s=>`<option value="${s}" ${p.sector===s?'selected':''}>${s}</option>`).join('')}
+              </select>
+            </div>
+            <div style="margin-top:14px;">
               <div class="detail-item-label" style="margin-bottom:6px;">Tu tesis / notas</div>
               <textarea class="note-input" data-key="${p.key}" rows="2" placeholder="¿Por qué compraste esta acción? ¿Cuál es tu objetivo?" style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-alt);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;resize:vertical;">${escapeHtml(noteVal)}</textarea>
             </div>
@@ -912,6 +952,16 @@
         </div>
       `;
     }).join('');
+
+    wrap.querySelectorAll('.sector-input').forEach(sel=>{
+      sel.addEventListener('click', e=> e.stopPropagation());
+      sel.addEventListener('change', async ()=>{
+        const storeKey = sel.dataset.isin || sel.dataset.key;
+        state.sectors[storeKey] = sel.value;
+        await saveState();
+        renderActiveTab();
+      });
+    });
 
     wrap.querySelectorAll('.note-input').forEach(ta=>{
       ta.addEventListener('blur', async ()=>{
@@ -1140,6 +1190,37 @@
     });
   }
 
+  function renderExposureBar(positions, field, title){
+    const total = positions.reduce((s,p)=>s+p.totalCost,0);
+    const groups = {};
+    positions.forEach(p=>{
+      const g = p[field] || 'Sin clasificar';
+      groups[g] = (groups[g]||0) + p.totalCost;
+    });
+    const entries = Object.entries(groups).sort((a,b)=>b[1]-a[1]);
+    if(total<=0 || entries.length===0){
+      return `<div class="exposure-block"><p class="evo-chart-label">${title}</p><p class="no-data">Todavía no hay datos suficientes.</p></div>`;
+    }
+    const segs = entries.map(([label,value],i)=>({
+      label, value, pct: value/total*100, color: PALETTE[i % PALETTE.length]
+    }));
+    const bar = segs.map(s=>`<div class="exposure-seg" style="width:${s.pct}%;background:${s.color};" title="${escapeHtml(s.label)}: ${fmtPct(s.pct)}"></div>`).join('');
+    const legend = segs.map(s=>`
+      <div class="exposure-legend-item">
+        <span class="legend-dot" style="background:${s.color}"></span>
+        <span class="legend-name">${escapeHtml(s.label)}</span>
+        <span class="legend-pct">${fmtPct(s.pct)}</span>
+      </div>
+    `).join('');
+    return `
+      <div class="exposure-block">
+        <p class="evo-chart-label">${title}</p>
+        <div class="exposure-bar">${bar}</div>
+        <div class="exposure-legend">${legend}</div>
+      </div>
+    `;
+  }
+
   function renderDonut(positions, selKey){
     const size = 160, stroke = 22, r = (size-stroke)/2, c = 2*Math.PI*r;
     const total = positions.reduce((s,p)=>s+p.totalCost,0);
@@ -1261,6 +1342,12 @@
     }
 
     const donutHtml = renderDonut(positions, selectedKey);
+    const exposureHtml = `
+      <div class="exposure-grid">
+        ${renderExposureBar(positions, 'currency', 'Exposición por divisa')}
+        ${renderExposureBar(positions, 'sector', 'Exposición por sector')}
+      </div>
+    `;
 
     let thead = '<tr>' + TABLE_COLS.map(c=>`<th data-key="${c.key}" class="${tableSort.key===c.key?'sorted':''}">${c.label}${tableSort.key===c.key?(tableSort.dir===1?' ▲':' ▼'):''}</th>`).join('') + '</tr>';
     let tbody = rows.map(r=>{
@@ -1280,7 +1367,7 @@
       <td class="${totals.pnl>=0?'pos':'neg'}">${totals.totalCost>0?fmtPct(totals.pnl/totals.totalCost*100):'—'}</td>
     </tr>`;
 
-    wrap.innerHTML = kpiHtml + donutHtml + `<div class="table-wrap"><table class="data-table"><thead>${thead}</thead><tbody>${tbody}</tbody><tfoot>${tfoot}</tfoot></table></div>`;
+    wrap.innerHTML = kpiHtml + donutHtml + exposureHtml + `<div class="table-wrap"><table class="data-table"><thead>${thead}</thead><tbody>${tbody}</tbody><tfoot>${tfoot}</tfoot></table></div>`;
 
     wrap.querySelectorAll('th[data-key]').forEach(th=>{
       th.addEventListener('click', ()=>{
@@ -1416,7 +1503,9 @@
       errorEl.textContent = `Ese ISIN ya está registrado como "${existingIsins[isin]}". Usa "Ampliar".`;
       errorEl.style.display='block'; return;
     }
+    const sector = document.getElementById('fn-sector').value;
     state.transactions.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), ticker, isin, date, shares, price, commission, type:'buy' });
+    state.sectors[isin] = sector;
     await saveState();
     e.target.reset();
     document.getElementById('fn-commission').value = 0;
