@@ -141,7 +141,15 @@
   .move-head{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;}
   .move-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;}
   .move-id{display:flex;flex-direction:column;gap:2px;min-width:0;}
-  .move-name{font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .move-name{font-size:13.5px;font-weight:700;color:var(--text);line-height:1.35;}
+  .move-name.pos{color:var(--green);}
+  .move-name.neg{color:var(--red);}
+  .daily-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .ds-item{font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:20px;background:var(--card);box-shadow:var(--shadow);}
+  .ds-item.pos{color:var(--green);}
+  .ds-item.neg{color:var(--red);}
+  .ds-item.flat{color:var(--text-dim);}
+  .ds-item.muted{color:var(--text-faint);font-weight:600;}
   .move-tag{font-size:11px;color:var(--text-faint);font-weight:500;}
   .move-tag.auto{color:var(--purple);}
   .move-num{text-align:right;}
@@ -1073,6 +1081,67 @@
     `;
   }
 
+  function briefFor(p){
+    if(p.isClosed) return { headline: `${escapeHtml(p.name)} — posición cerrada`, cls:'' };
+    if(!p.hasPrice) return { headline: `${escapeHtml(p.name)} — añade el precio actual`, cls:'' };
+    const pct = Math.abs(p.pnlPct);
+    if(p.pnlPct > 0.5) return { headline: `${escapeHtml(p.name)} sube un ${fmtPct(pct)} desde tu entrada`, cls:'pos' };
+    if(p.pnlPct < -0.5) return { headline: `${escapeHtml(p.name)} cae un ${fmtPct(pct)} desde tu entrada`, cls:'neg' };
+    return { headline: `${escapeHtml(p.name)} se mantiene estable desde tu entrada`, cls:'' };
+  }
+
+  function renderDailySummary(positions){
+    let up=0, down=0, flat=0, noData=0;
+    positions.forEach(p=>{
+      if(!p.isin || p.isClosed){ noData++; return; }
+      const pts = historyPointsFor(p.isin,'hoy').map(pt=>pt.v);
+      if(pts.length<2){ noData++; return; }
+      const chg = pts[0] ? (pts[pts.length-1]-pts[0])/pts[0]*100 : 0;
+      if(chg>0.15) up++; else if(chg<-0.15) down++; else flat++;
+    });
+    if(up+down+flat+noData===0) return '';
+    return `
+      <div class="daily-summary">
+        <span class="ds-item pos">▲ ${up} suben hoy</span>
+        <span class="ds-item neg">▼ ${down} bajan hoy</span>
+        <span class="ds-item flat">— ${flat} estables</span>
+        ${noData>0?`<span class="ds-item muted">${noData} sin datos de hoy</span>`:''}
+      </div>
+    `;
+  }
+
+  function renderRecentActivity(positions){
+    const nameByIsin = {};
+    positions.forEach(p=>{ if(p.isin) nameByIsin[p.isin]=p.name; });
+    const cutoff = Date.now() - 14*86400000;
+    const items = [];
+    state.transactions.forEach(t=>{
+      if(new Date(t.date).getTime() < cutoff) return;
+      const name = nameByIsin[t.isin] || t.ticker;
+      const amount = t.type==='sell' ? (t.shares*t.price-(t.commission||0)) : -(t.shares*t.price+(t.commission||0));
+      items.push({ date:t.date, text: `${t.type==='sell'?'Vendiste':'Compraste'} ${fmtNum(t.shares)} acc. de ${escapeHtml(name)}`, amount });
+    });
+    (state.dividends||[]).forEach(d=>{
+      if(new Date(d.date).getTime() < cutoff) return;
+      const name = nameByIsin[d.isin] || d.ticker;
+      items.push({ date:d.date, text: `Cobraste dividendo de ${escapeHtml(name)}`, amount: Number(d.amount||0) });
+    });
+    if(items.length===0) return '';
+    items.sort((a,b)=> new Date(b.date)-new Date(a.date));
+    const recent = items.slice(0,6);
+    return `
+      <div class="earnings-block" style="background:var(--card-alt);">
+        <p class="section-mini-label" style="color:var(--text-dim);">🕒 Actividad reciente</p>
+        ${recent.map(it=>`
+          <div class="earnings-item">
+            <span class="earnings-name">${it.text} <span style="color:var(--text-faint);font-weight:500;">· ${fmtDate(it.date)}</span></span>
+            <span class="earnings-days ${it.amount>=0?'':''}" style="color:${it.amount>=0?'var(--green)':'var(--text-dim)'};">${it.amount>=0?'+':''}${fmtMoney(it.amount)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   function renderNoticias(positions){
     const wrap = document.getElementById('tab-content');
     if(positions.length===0){
@@ -1080,7 +1149,9 @@
       return;
     }
     const earningsHtml = renderUpcomingEarnings(positions);
-    wrap.innerHTML = earningsHtml + positions.map(p=>{
+    const dailySummaryHtml = renderDailySummary(positions);
+    const recentActivityHtml = renderRecentActivity(positions);
+    wrap.innerHTML = dailySummaryHtml + earningsHtml + recentActivityHtml + positions.map(p=>{
       const open = openMoveRows.has(p.key);
       const color = colorFor(p.key);
       const changeCls = p.isClosed ? 'flat' : (!p.hasPrice ? 'flat' : (p.pnlPct>=0?'pos':'neg'));
@@ -1088,12 +1159,13 @@
       const hasWash = p.washFlags && p.washFlags.length>0;
       const pxirr = positionXIRR(p);
       const noteVal = state.notes[p.key] || '';
+      const brief = briefFor(p);
       return `
         <div class="move-row ${open?'open':''}" data-key="${p.key}">
           <div class="move-head">
             <div class="move-icon" style="background:${color};">${initialsFor(p.name)}</div>
             <div class="move-id">
-              <span class="move-name">${escapeHtml(p.name)}${hasWash?' ⚠':''}</span>
+              <span class="move-name ${brief.cls}">${brief.headline}${hasWash?' ⚠':''}</span>
               <span class="move-tag ${p.isAuto?'auto':''}">${p.isin || 'sin ISIN'}${p.isAuto?' ⚡':''}</span>
             </div>
             <div class="move-num">
