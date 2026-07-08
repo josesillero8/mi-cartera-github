@@ -204,6 +204,15 @@
   .donut-section{display:flex;flex-direction:column;gap:18px;margin-bottom:20px;background:var(--card);border-radius:20px;padding:20px 18px;box-shadow:var(--shadow);}
   .exposure-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:20px;}
   .exposure-block{background:var(--card);border-radius:18px;padding:18px 18px 8px;box-shadow:var(--shadow);}
+  .sales-list{display:flex;flex-direction:column;max-height:320px;overflow-y:auto;}
+  .sale-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--border);gap:10px;}
+  .sale-row:first-child{border-top:none;}
+  .sale-info{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .sale-name{font-size:12.5px;font-weight:700;color:var(--text);}
+  .sale-date{font-size:11px;color:var(--text-faint);}
+  .sale-gain{font-size:13px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .sales-total{display:flex;justify-content:space-between;padding:12px 0 8px;margin-top:4px;border-top:1.5px solid var(--border);font-size:12.5px;font-weight:700;color:var(--text-dim);}
+  .sales-total span:last-child{font-variant-numeric:tabular-nums;}
   .exposure-bar{display:flex;height:14px;border-radius:8px;overflow:hidden;background:var(--card-alt);margin-bottom:12px;}
   .exposure-seg{height:100%;min-width:2px;cursor:pointer;transition:opacity 0.15s;}
   .exposure-seg.dim{opacity:0.25;}
@@ -550,6 +559,7 @@
   const fmtNum = n => (isFinite(n)?n:0).toLocaleString('es-ES',{maximumFractionDigits:4});
   const fmtDate = d => { try { return new Date(d+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){ return d; } };
   const escapeHtml = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
+  const round8 = v => { const r = Math.round(v*1e8)/1e8; return Math.abs(r) < 1e-6 ? 0 : r; };
   const colorFor = key => PALETTE[Math.abs(hashCode(key)) % PALETTE.length];
   function hashCode(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return h; }
   const initialsFor = name => name.trim().slice(0,2).toUpperCase();
@@ -781,6 +791,7 @@
       }));
       let realizedPnl = 0;
       const washFlags = [];
+      const saleHistory = [];
       sells.forEach(s=>{
         let toSell = s.shares, costOfSold = 0;
         for(const lot of lots){
@@ -788,12 +799,13 @@
           if(lot.remaining<=0) continue;
           const take = Math.min(lot.remaining, toSell);
           costOfSold += take*lot.costPerShare;
-          lot.remaining -= take;
-          toSell -= take;
+          lot.remaining = round8(lot.remaining - take);
+          toSell = round8(toSell - take);
         }
         const proceeds = s.shares*s.price - (s.commission||0);
         const gain = proceeds - costOfSold;
         realizedPnl += gain;
+        saleHistory.push({ date: s.date, shares: s.shares, price: s.price, commission: s.commission||0, costBasis: costOfSold, proceeds, gain });
         if(gain < 0 && data.isin){
           const sellTime = new Date(s.date).getTime();
           const nearbyBuy = buys.some(b => Math.abs(new Date(b.date).getTime()-sellTime)/86400000 <= 60 && b.date !== s.date);
@@ -801,8 +813,12 @@
         }
       });
 
-      const totalShares = lots.reduce((sum,l)=>sum+l.remaining,0);
-      const totalCost = lots.reduce((sum,l)=>sum+l.remaining*l.costPerShare,0);
+      // Redondeo defensivo: operaciones en coma flotante repetidas pueden
+      // dejar un residuo minúsculo (p.ej. 0.000000000003) al vender el 100%
+      // de una posición. Se trata como cero para que la posición se cierre
+      // de verdad en vez de quedar "viva" con un decimal fantasma.
+      const totalShares = round8(lots.reduce((sum,l)=>sum+Math.max(0,l.remaining),0));
+      const totalCost = totalShares>0 ? lots.reduce((sum,l)=>sum+Math.max(0,l.remaining)*l.costPerShare,0) : 0;
       const avgPrice = totalShares>0 ? totalCost/totalShares : 0;
       const totalCommission = ops.reduce((s,o)=>s+(Number(o.commission)||0),0);
 
@@ -826,7 +842,7 @@
       return {
         key, name:data.display, isin:data.isin, ops, totalShares, totalCost, avgPrice,
         currentPrice, hasPrice, isAuto, currentValue, pnl, pnlPct,
-        realizedPnl, totalCommission, dividends, washFlags, isClosed: totalShares<=0 && buys.length>0,
+        realizedPnl, totalCommission, dividends, washFlags, isClosed: totalShares<=0 && buys.length>0, saleHistory,
         sector, currency
       };
     }).sort((a,b)=> b.totalCost - a.totalCost);
@@ -1092,7 +1108,7 @@
               <div><div class="detail-item-label">Precio medio</div><div class="detail-item-value">${p.totalShares>0?fmtMoney(p.avgPrice):'—'}</div></div>
               <div><div class="detail-item-label">Invertido ahora</div><div class="detail-item-value">${fmtMoney(p.totalCost)}</div></div>
               <div><div class="detail-item-label">Resultado no realizado</div><div class="detail-item-value ${p.hasPrice?(p.pnl>=0?'pos':'neg'):''}">${p.hasPrice?fmtMoney(p.pnl):'—'}</div></div>
-              <div><div class="detail-item-label">Ganancia realizada</div><div class="detail-item-value ${p.realizedPnl!==0?(p.realizedPnl>=0?'pos':'neg'):''}">${fmtMoney(p.realizedPnl)}</div></div>
+              <div><div class="detail-item-label" title="Suma de las ganancias o pérdidas de las ventas que ya has hecho (precio de venta − tu coste de compra). No incluye lo que todavía tienes sin vender.">Ganancia realizada ⓘ</div><div class="detail-item-value ${p.realizedPnl!==0?(p.realizedPnl>=0?'pos':'neg'):''}">${fmtMoney(p.realizedPnl)}</div></div>
               <div><div class="detail-item-label">Dividendos cobrados</div><div class="detail-item-value pos">${fmtMoney(p.dividends)}</div></div>
               <div><div class="detail-item-label">Comisiones pagadas</div><div class="detail-item-value">${fmtMoney(p.totalCommission)}</div></div>
               <div><div class="detail-item-label">Operaciones</div><div class="detail-item-value">${p.ops.length}</div></div>
@@ -1518,7 +1534,7 @@
           <div class="kpi-card"><p class="kpi-label">Valor actual</p><p class="kpi-value">${fmtMoney(fValue)}</p></div>
           <div class="kpi-card"><p class="kpi-label">Resultado</p><p class="kpi-value ${fPnl>=0?'pos':'neg'}">${fmtMoney(fPnl)}</p></div>
           <div class="kpi-card"><p class="kpi-label">% de tu cartera</p><p class="kpi-value">${fmtPct(pctOfPortfolio)}</p></div>
-          <div class="kpi-card"><p class="kpi-label">Ganancia realizada</p><p class="kpi-value ${fRealized>=0?'pos':'neg'}">${fmtMoney(fRealized)}</p></div>
+          <div class="kpi-card"><p class="kpi-label" title="Suma de las ganancias o pérdidas de las ventas que ya has hecho (precio de venta − tu coste de compra). No incluye lo que todavía tienes sin vender.">Ganancia realizada ⓘ</p><p class="kpi-value ${fRealized>=0?'pos':'neg'}">${fmtMoney(fRealized)}</p></div>
           <div class="kpi-card"><p class="kpi-label">Dividendos</p><p class="kpi-value pos">${fmtMoney(fDividends)}</p></div>
           <div class="kpi-card" style="grid-column:1/-1;">
             <p class="kpi-label">TIR anualizada de ${escapeHtml(label)}</p>
@@ -1541,7 +1557,7 @@
           <div class="kpi-card"><p class="kpi-label">Valor actual</p><p class="kpi-value">${fmtMoney(totals.currentValue)}</p></div>
           <div class="kpi-card"><p class="kpi-label">Resultado no realizado</p><p class="kpi-value ${totals.pnl>=0?'pos':'neg'}">${fmtMoney(totals.pnl)}</p></div>
           <div class="kpi-card"><p class="kpi-label">Posiciones</p><p class="kpi-value">${rows.length}</p></div>
-          <div class="kpi-card"><p class="kpi-label">Ganancia realizada</p><p class="kpi-value ${totals.realizedPnl>=0?'pos':'neg'}">${fmtMoney(totals.realizedPnl)}</p></div>
+          <div class="kpi-card"><p class="kpi-label" title="Suma de las ganancias o pérdidas de las ventas que ya has hecho (precio de venta − tu coste de compra). No incluye lo que todavía tienes sin vender.">Ganancia realizada ⓘ</p><p class="kpi-value ${totals.realizedPnl>=0?'pos':'neg'}">${fmtMoney(totals.realizedPnl)}</p></div>
           <div class="kpi-card"><p class="kpi-label">Dividendos cobrados</p><p class="kpi-value pos">${fmtMoney(totals.dividends)}</p></div>
           <div class="kpi-card"><p class="kpi-label">Comisiones pagadas</p><p class="kpi-value">${fmtMoney(totals.totalCommission)}</p></div>
           <div class="kpi-card" style="grid-column:1/-1;">
@@ -1587,7 +1603,36 @@
       <td class="${totals.pnl>=0?'pos':'neg'}">${totals.totalCost>0?fmtPct(totals.pnl/totals.totalCost*100):'—'}</td>
     </tr>`;
 
-    wrap.innerHTML = kpiHtml + donutHtml + exposureHtml + `<div class="table-wrap"><table class="data-table"><thead>${thead}</thead><tbody>${tbody}</tbody><tfoot>${tfoot}</tfoot></table></div>`;
+    const salesRows = [];
+    positions.filter(p=> !selectedFilter || matchesFilter(p,selectedFilter)).forEach(p=>{
+      (p.saleHistory||[]).forEach(s=> salesRows.push({ name:p.name, ...s }));
+    });
+    salesRows.sort((a,b)=> new Date(b.date) - new Date(a.date));
+    const salesTotal = salesRows.reduce((s,r)=>s+r.gain,0);
+    const salesHtml = `
+      <div class="exposure-block" style="margin-top:20px;">
+        <p class="evo-chart-label">Historial de ventas${selectedFilter?' — '+escapeHtml(filterLabel(selectedFilter)):''}</p>
+        ${salesRows.length===0 ? '<p class="no-data">Todavía no has vendido nada aquí.</p>' : `
+          <div class="sales-list">
+            ${salesRows.map(r=>`
+              <div class="sale-row">
+                <div class="sale-info">
+                  <span class="sale-name">${escapeHtml(r.name)}</span>
+                  <span class="sale-date">${fmtDate(r.date)} · ${fmtNum(r.shares)} acc. a ${fmtMoney(r.price)}</span>
+                </div>
+                <span class="sale-gain ${r.gain>=0?'pos':'neg'}">${r.gain>=0?'+':''}${fmtMoney(r.gain)}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="sales-total">
+            <span>Total de estas ventas</span>
+            <span class="${salesTotal>=0?'pos':'neg'}">${salesTotal>=0?'+':''}${fmtMoney(salesTotal)}</span>
+          </div>
+        `}
+      </div>
+    `;
+
+    wrap.innerHTML = kpiHtml + donutHtml + exposureHtml + `<div class="table-wrap"><table class="data-table"><thead>${thead}</thead><tbody>${tbody}</tbody><tfoot>${tfoot}</tfoot></table></div>` + salesHtml;
 
     wrap.querySelectorAll('th[data-key]').forEach(th=>{
       th.addEventListener('click', ()=>{
@@ -1781,7 +1826,7 @@
       errorEl.style.display='block'; return;
     }
     const held = sharesHeldFor(isin);
-    if(shares > held){
+    if(shares > held + 1e-6){
       errorEl.textContent = `Solo tienes ${fmtNum(held)} acciones de esta posición — no puedes vender más de las que tienes.`;
       errorEl.style.display='block'; return;
     }
