@@ -176,7 +176,7 @@
 
   /* Evolucion */
   .evo-toggle{display:flex;gap:8px;margin-bottom:16px;background:var(--card-alt);padding:4px;border-radius:14px;width:fit-content;}
-  .evo-btn{padding:7px 16px;border:none;background:none;border-radius:10px;font-size:12px;font-weight:700;color:var(--text-dim);cursor:pointer;}
+  .evo-btn{padding:6px 11px;border:none;background:var(--card-alt);border-radius:10px;font-size:11.5px;font-weight:700;color:var(--text-dim);cursor:pointer;}
   .evo-btn.active{background:var(--card);color:var(--purple);box-shadow:0 2px 8px rgba(20,20,43,0.08);}
   .evo-chart-wrap{background:var(--card);border-radius:20px;padding:18px 18px;margin-bottom:18px;box-shadow:var(--shadow);}
   .evo-chart-label{font-size:11.5px;color:var(--text-dim);font-weight:600;margin:0 0 12px;}
@@ -522,7 +522,7 @@
   let remoteHistory = null;
   let activeTab = 'noticias';
   let openMoveRows = new Set();
-  let evoRange = 'general';
+  let evoRange = '30d';
   let selectedBenchmark = null;
   let openEvoRows = new Set();
   let tableSort = { key: 'totalCost', dir: -1 };
@@ -832,14 +832,36 @@
     }).sort((a,b)=> b.totalCost - a.totalCost);
   }
 
-  function historyPointsFor(isin, range){
-    if(!remoteHistory || !remoteHistory.points || !isin) return [];
-    let pts = remoteHistory.points.filter(pt => pt.prices && typeof pt.prices[isin] === 'number');
+  const RANGE_LABELS = { hoy:'Hoy', '7d':'1 semana', '30d':'1 mes', '90d':'3 meses', '1a':'1 año', todo:'Todo' };
+  const RANGE_DAYS = { hoy:0, '7d':7, '30d':30, '90d':90, '1a':365, todo:Infinity };
+
+  // Filtra el histórico al rango elegido y, para rangos de más de una semana,
+  // se queda con un solo punto por día (el último) en vez de cada actualización
+  // de 15 min — así las gráficas de medio/largo plazo muestran la tendencia
+  // real sin el "ruido" de tantos puntos tan seguidos.
+  function filterPointsByRange(points, range){
+    if(!points || !points.length) return [];
+    let filtered;
     if(range === 'hoy'){
       const todayStr = new Date().toDateString();
-      pts = pts.filter(pt => new Date(pt.timestamp).toDateString() === todayStr);
+      filtered = points.filter(pt => new Date(pt.timestamp).toDateString() === todayStr);
+    } else {
+      const days = RANGE_DAYS[range] ?? Infinity;
+      const cutoff = Date.now() - days*86400000;
+      filtered = (days===Infinity) ? points.slice() : points.filter(pt => new Date(pt.timestamp).getTime() >= cutoff);
+      if(range !== '7d'){
+        const byDay = {};
+        filtered.forEach(pt=>{ byDay[new Date(pt.timestamp).toDateString()] = pt; }); // se queda con el último del día
+        filtered = Object.values(byDay);
+      }
     }
-    return pts.map(pt => ({ t: pt.timestamp, v: pt.prices[isin] }));
+    return filtered;
+  }
+
+  function historyPointsFor(isin, range){
+    if(!remoteHistory || !remoteHistory.points || !isin) return [];
+    const points = filterPointsByRange(remoteHistory.points, range);
+    return points.filter(pt=>pt.prices && typeof pt.prices[isin]==='number').map(pt => ({ t: pt.timestamp, v: pt.prices[isin] }));
   }
 
   function sparklinePath(values, w, h, pad){
@@ -1247,11 +1269,7 @@
     const sharesByIsin = {};
     positions.forEach(p=>{ if(p.isin) sharesByIsin[p.isin] = p.totalShares; });
 
-    let points = (remoteHistory && remoteHistory.points) || [];
-    if(evoRange === 'hoy'){
-      const todayStr = new Date().toDateString();
-      points = points.filter(pt => new Date(pt.timestamp).toDateString() === todayStr);
-    }
+    let points = filterPointsByRange((remoteHistory && remoteHistory.points) || [], evoRange);
     const series = points.map(pt=>{
       let total = 0, any=false;
       Object.entries(pt.prices||{}).forEach(([isin, price])=>{
@@ -1300,12 +1318,11 @@
     }
 
     let html = `
-      <div class="evo-toggle">
-        <button class="evo-btn ${evoRange==='hoy'?'active':''}" data-range="hoy">Hoy</button>
-        <button class="evo-btn ${evoRange==='general'?'active':''}" data-range="general">Desde el inicio</button>
+      <div class="evo-toggle" style="background:none;padding:0;width:auto;flex-wrap:wrap;gap:6px;">
+        ${Object.keys(RANGE_LABELS).map(r=>`<button class="evo-btn ${evoRange===r?'active':''}" data-range="${r}">${RANGE_LABELS[r]}</button>`).join('')}
       </div>
       <div class="evo-chart-wrap">
-        <p class="evo-chart-label">Valor total · ${evoRange==='hoy'?'hoy':'histórico completo'}</p>
+        <p class="evo-chart-label">Valor total · ${RANGE_LABELS[evoRange]}${evoRange!=='hoy' && evoRange!=='7d' ? ' (un punto por día)' : ''}</p>
         ${renderAreaChart(series, '#6C5CE7', 420, 130)}
       </div>
       ${compareHtml}
