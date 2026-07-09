@@ -761,6 +761,12 @@
   }
 
   // TIR de cualquier grupo de posiciones (una acción, todas las de una divisa, o todas las de un sector)
+  function elapsedYearsSince(transactions){
+    if(!transactions || !transactions.length) return null;
+    const earliest = Math.min(...transactions.map(t=>new Date(t.date).getTime()));
+    return (Date.now() - earliest) / (365*86400000);
+  }
+
   function groupXIRR(matchedPositions){
     if(matchedPositions.length === 1) return positionXIRR(matchedPositions[0]);
     const isins = new Set(matchedPositions.map(p=>p.isin).filter(Boolean));
@@ -953,7 +959,7 @@
     </svg>`;
   }
 
-  function renderSimpleVsCompoundChart(principal, annualRatePct, years, w, h){
+  function renderSimpleVsCompoundChart(principal, annualRatePct, years, w, h, elapsedYears){
     if(principal<=0 || annualRatePct==null) return '<p class="no-data">Faltan datos (precio o TIR) para proyectar esta comparación.</p>';
     const r = annualRatePct/100;
     const pad = 26;
@@ -970,10 +976,23 @@
     const finalCompound = compoundSeries[compoundSeries.length-1];
     const gid = 'gc'+Math.random().toString(36).slice(2,8);
     const yearTicks = [0, Math.round(years/2), years];
+    let markerHtml = '';
+    if(elapsedYears!=null && elapsedYears>=0 && elapsedYears<=years){
+      const mx = pad + elapsedYears*stepX;
+      const realValue = principal*Math.pow(1+r, elapsedYears);
+      const my = pad + (h-pad*1.6)*(1-(realValue-min)/range);
+      const daysLabel = elapsedYears < 1 ? `${Math.round(elapsedYears*365)} días` : `${elapsedYears.toFixed(1)} años`;
+      markerHtml = `
+        <line x1="${mx.toFixed(1)}" y1="${pad}" x2="${mx.toFixed(1)}" y2="${h-pad*0.6}" stroke="#6C5CE7" stroke-width="1.2" stroke-dasharray="3,3"/>
+        <circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="4.5" fill="#6C5CE7" stroke="#fff" stroke-width="1.5"/>
+        <text x="${mx.toFixed(1)}" y="${pad+10}" font-size="9" text-anchor="${elapsedYears<years*0.15?'start':'middle'}" fill="#6C5CE7" font-weight="700">Hoy · ${daysLabel}</text>
+      `;
+    }
     return `
-      <div style="display:flex;gap:16px;margin-bottom:8px;font-size:11px;">
+      <div style="display:flex;gap:16px;margin-bottom:8px;font-size:11px;flex-wrap:wrap;">
         <span style="color:var(--text-dim);"><span style="display:inline-block;width:14px;border-top:2px dashed #A3A1B8;margin-right:5px;vertical-align:middle;"></span>Interés simple</span>
         <span style="color:var(--text-dim);"><span style="display:inline-block;width:14px;border-top:2.5px solid #00B894;margin-right:5px;vertical-align:middle;"></span>Interés compuesto</span>
+        ${markerHtml?`<span style="color:var(--text-dim);"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6C5CE7;margin-right:5px;vertical-align:middle;"></span>Dónde estás ahora</span>`:''}
       </div>
       <svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
         <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
@@ -984,11 +1003,12 @@
         <path d="${pathFor(compoundSeries)} L${(pad+(steps-1)*stepX).toFixed(1)},${h-pad*0.6} L${pad},${h-pad*0.6} Z" fill="url(#${gid})" stroke="none"/>
         <path d="${pathFor(simpleSeries)}" fill="none" stroke="#A3A1B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5,4"/>
         <path d="${pathFor(compoundSeries)}" fill="none" stroke="#00B894" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        ${markerHtml}
         <text x="${w-pad}" y="${pad-8}" font-size="10" text-anchor="end" fill="#8B8FA3">${fmtMoney(max)}</text>
         <text x="${pad}" y="${h-pad*0.6+2}" font-size="10" fill="#8B8FA3">${fmtMoney(principal)} hoy</text>
         ${yearTicks.map(yr=>`<text x="${(pad+(yr)*stepX).toFixed(1)}" y="${h-4}" font-size="9.5" text-anchor="${yr===0?'start':yr===years?'end':'middle'}" fill="#A3A1B8">${yr===0?'Hoy':'Año '+yr}</text>`).join('')}
       </svg>
-      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">
+      ${elapsedYears!=null && elapsedYears < years*0.25 ? `<p class="xirr-hint">Fíjate en el punto morado: llevas ${elapsedYears<1?Math.round(elapsedYears*365)+' días':elapsedYears.toFixed(1)+' años'}, muy al principio de la gráfica. La diferencia entre simple y compuesto casi no existe todavía — solo se dispara si mantienes este ritmo durante los próximos ${years} años, que es una suposición, no un hecho.</p>` : ''}      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;">
         <span style="color:var(--text-dim);">Simple a ${years} años: <b style="color:var(--text);">${fmtMoney(finalSimple)}</b></span>
         <span style="color:var(--text-dim);">Compuesto a ${years} años: <b style="color:#00B894;">${fmtMoney(finalCompound)}</b></span>
       </div>
@@ -1632,7 +1652,7 @@
             ${gXirr!=null ? `
             <div class="growth-chart-block" style="margin-top:12px;background:var(--card);">
               <p class="detail-item-label" style="margin-bottom:8px;">Si mantuvieras esta TIR: simple vs. interés compuesto a 20 años</p>
-              ${renderSimpleVsCompoundChart(fValue, gXirr, 20, 680, 160)}
+              ${renderSimpleVsCompoundChart(fValue, gXirr, 20, 680, 160, elapsedYearsSince(filteredPositions.flatMap(p=>p.ops)))}
               <p class="xirr-hint">Proyección ilustrativa a partir de la TIR real hasta hoy de ${escapeHtml(label)} — no es una predicción ni garantía de rentabilidad futura.</p>
             </div>
             ` : ''}
@@ -1657,7 +1677,7 @@
             ${xirr!=null ? `
             <div class="growth-chart-block" style="margin-top:12px;background:var(--card);">
               <p class="detail-item-label" style="margin-bottom:8px;">Si mantuvieras esta TIR: simple vs. interés compuesto a 20 años</p>
-              ${renderSimpleVsCompoundChart(totals.currentValue, xirr, 20, 680, 160)}
+              ${renderSimpleVsCompoundChart(totals.currentValue, xirr, 20, 680, 160, elapsedYearsSince(state.transactions))}
               <p class="xirr-hint">Proyección ilustrativa a partir de tu TIR real hasta hoy — no es una predicción ni garantía de rentabilidad futura.</p>
             </div>
             ` : ''}
