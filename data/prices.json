@@ -2,90 +2,90 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 711.28,
-    "originalPrice": 711.28,
+    "price": 711.5,
+    "originalPrice": 711.5,
     "originalCurrency": "EUR",
-    "change": -0.20000000000004547,
-    "changesPercentage": -0.028110417720813723,
+    "change": 0.01999999999998181,
+    "changesPercentage": 0.002811041772078177,
     "currency": "EUR",
-    "updated": "2026-07-13T12:15:21+00:00"
+    "updated": "2026-07-13T12:30:51+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
     "companyName": "iShares Physical Gold ETC",
-    "price": 68.92,
-    "originalPrice": 68.92,
+    "price": 68.91,
+    "originalPrice": 68.91,
     "originalCurrency": "EUR",
-    "change": -0.7199999999999989,
-    "changesPercentage": -1.0338885697874767,
+    "change": -0.730000000000004,
+    "changesPercentage": -1.0482481332567546,
     "currency": "EUR",
-    "updated": "2026-07-13T12:15:21+00:00"
+    "updated": "2026-07-13T12:30:51+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
     "companyName": "Uber Technologies",
-    "price": 65.23717836513215,
+    "price": 65.23146932703247,
     "originalPrice": 74.54,
     "originalCurrency": "USD",
     "change": 0.19000000000001194,
     "changesPercentage": 0.2555480833893906,
     "currency": "EUR",
-    "updated": "2026-07-13T12:15:21+00:00"
+    "updated": "2026-07-13T12:30:51+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
     "companyName": "WisdomTree Gold 3x Daily Leveraged",
-    "price": 112.83038683703832,
-    "originalPrice": 128.92,
+    "price": 112.33919663953795,
+    "originalPrice": 128.37,
     "originalCurrency": "USD",
-    "change": -3.9750000000000227,
-    "changesPercentage": -2.991083185973906,
+    "change": -4.525000000000006,
+    "changesPercentage": -3.4049437525866324,
     "currency": "EUR",
-    "updated": "2026-07-13T12:15:21+00:00"
+    "updated": "2026-07-13T12:30:51+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 43.175,
-    "originalPrice": 43.175,
+    "price": 43.04,
+    "originalPrice": 43.04,
     "originalCurrency": "EUR",
-    "change": 0.0449999999999946,
-    "changesPercentage": 0.10433572919080593,
+    "change": -0.09000000000000341,
+    "changesPercentage": -0.20867145838164483,
     "currency": "EUR",
-    "updated": "2026-07-13T12:15:21+00:00"
+    "updated": "2026-07-13T12:30:51+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 48.76378435147908,
-    "originalPrice": 55.7175,
+    "price": 48.728887722061785,
+    "originalPrice": 55.6825,
     "originalCurrency": "USD",
-    "change": -1.1400000000000006,
-    "changesPercentage": -2.0050125313283216,
+    "change": -1.1750000000000043,
+    "changesPercentage": -2.066569933605952,
     "currency": "EUR",
-    "updated": "2026-07-13T12:15:21+00:00"
+    "updated": "2026-07-13T12:30:51+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
     "companyName": "LyondellBasell Industries",
-    "price": 49.31734640294066,
+    "price": 49.31303054169948,
     "originalPrice": 56.35,
     "originalCurrency": "USD",
     "change": 0.9600000000000009,
     "changesPercentage": 1.7331648311969685,
     "currency": "EUR",
-    "updated": "2026-07-13T12:15:21+00:00"
+    "updated": "2026-07-13T12:30:51+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
     "companyName": "Laboratorios Rovi",
-    "price": 54.25,
-    "originalPrice": 54.25,
+    "price": 54.2,
+    "originalPrice": 54.2,
     "originalCurrency": "EUR",
-    "change": -0.7999999999999972,
-    "changesPercentage": -1.453224341507715,
+    "change": -0.8499999999999943,
+    "changesPercentage": -1.5440508628519427,
     "currency": "EUR",
-    "updated": "2026-07-13T12:15:21+00:00"
+    "updated": "2026-07-13T12:30:51+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
@@ -96,6 +96,6 @@
     "change": -0.11000000000000121,
     "changesPercentage": -0.8828250401284204,
     "currency": "EUR",
-    "updated": "2026-07-13T12:15:21+00:00"
+    "updated": "2026-07-13T12:30:51+00:00"
   }
 }
