@@ -2,24 +2,24 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 706.2,
-    "originalPrice": 706.2,
+    "price": 706.0,
+    "originalPrice": 706.0,
     "originalCurrency": "EUR",
-    "change": -1.759999999999991,
-    "changesPercentage": -0.2486016159105021,
+    "change": -1.9600000000000364,
+    "changesPercentage": -0.27685179953670214,
     "currency": "EUR",
-    "updated": "2026-07-22T12:15:22+00:00"
+    "updated": "2026-07-22T12:30:33+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
     "companyName": "iShares Physical Gold ETC",
-    "price": 70.055,
-    "originalPrice": 70.055,
+    "price": 70.135,
+    "originalPrice": 70.135,
     "originalCurrency": "EUR",
-    "change": 0.6900000000000119,
-    "changesPercentage": 0.9947379802494226,
+    "change": 0.7700000000000102,
+    "changesPercentage": 1.1100699199884816,
     "currency": "EUR",
-    "updated": "2026-07-22T12:15:22+00:00"
+    "updated": "2026-07-22T12:30:33+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
@@ -46,13 +46,13 @@
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 43.155,
-    "originalPrice": 43.155,
+    "price": 43.255,
+    "originalPrice": 43.255,
     "originalCurrency": "EUR",
-    "change": -0.26500000000000057,
-    "changesPercentage": -0.6103178258866895,
+    "change": -0.16499999999999915,
+    "changesPercentage": -0.3800092123445397,
     "currency": "EUR",
-    "updated": "2026-07-22T12:15:22+00:00"
+    "updated": "2026-07-22T12:30:33+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
@@ -85,7 +85,7 @@
     "change": 2.3499999999999943,
     "changesPercentage": 4.296160877513701,
     "currency": "EUR",
-    "updated": "2026-07-22T12:15:22+00:00"
+    "updated": "2026-07-22T12:30:33+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
@@ -96,6 +96,6 @@
     "change": -0.11999999999999922,
     "changesPercentage": -0.9273570324574901,
     "currency": "EUR",
-    "updated": "2026-07-22T12:15:22+00:00"
+    "updated": "2026-07-22T12:30:33+00:00"
   }
 }
