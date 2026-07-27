@@ -2,79 +2,79 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 707.44,
-    "originalPrice": 707.44,
+    "price": 707.58,
+    "originalPrice": 707.58,
     "originalCurrency": "EUR",
-    "change": 2.840000000000032,
-    "changesPercentage": 0.4030655691172342,
+    "change": 2.980000000000018,
+    "changesPercentage": 0.42293499858075756,
     "currency": "EUR",
-    "updated": "2026-07-27T13:30:34+00:00"
+    "updated": "2026-07-27T13:45:21+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
     "companyName": "iShares Physical Gold ETC",
-    "price": 69.62,
-    "originalPrice": 69.62,
+    "price": 69.535,
+    "originalPrice": 69.535,
     "originalCurrency": "EUR",
-    "change": 0.6099999999999994,
-    "changesPercentage": 0.8839298652369213,
+    "change": 0.5249999999999915,
+    "changesPercentage": 0.7607593102448796,
     "currency": "EUR",
-    "updated": "2026-07-27T13:30:34+00:00"
+    "updated": "2026-07-27T13:45:21+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
     "companyName": "Uber Technologies",
-    "price": 58.5295151089248,
-    "originalPrice": 66.63,
+    "price": 58.40727400509532,
+    "originalPrice": 66.485,
     "originalCurrency": "USD",
-    "change": 0.6799999999999926,
-    "changesPercentage": 1.031084154662612,
+    "change": 0.5349999999999966,
+    "changesPercentage": 0.811220621683088,
     "currency": "EUR",
-    "updated": "2026-07-27T13:30:34+00:00"
+    "updated": "2026-07-27T13:45:21+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
     "companyName": "WisdomTree Gold 3x Daily Leveraged",
-    "price": 114.16022487702037,
+    "price": 114.1702538873759,
     "originalPrice": 129.96,
     "originalCurrency": "USD",
     "change": 1.2050000000000125,
     "changesPercentage": 0.9358859850103006,
     "currency": "EUR",
-    "updated": "2026-07-27T13:30:34+00:00"
+    "updated": "2026-07-27T13:45:21+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 43.28,
-    "originalPrice": 43.28,
+    "price": 43.265,
+    "originalPrice": 43.265,
     "originalCurrency": "EUR",
-    "change": 0.28000000000000114,
-    "changesPercentage": 0.651162790697677,
+    "change": 0.26500000000000057,
+    "changesPercentage": 0.6162790697674432,
     "currency": "EUR",
-    "updated": "2026-07-27T13:30:34+00:00"
+    "updated": "2026-07-27T13:45:21+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 49.27969079409697,
-    "originalPrice": 56.1,
+    "price": 49.07317930246859,
+    "originalPrice": 55.86,
     "originalCurrency": "USD",
-    "change": 0.11250000000000426,
-    "changesPercentage": 0.20093770931012148,
+    "change": -0.12749999999999773,
+    "changesPercentage": -0.22772940388479165,
     "currency": "EUR",
-    "updated": "2026-07-27T13:30:34+00:00"
+    "updated": "2026-07-27T13:45:21+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
     "companyName": "LyondellBasell Industries",
-    "price": 51.1551300070274,
-    "originalPrice": 58.235,
+    "price": 51.708688394974956,
+    "originalPrice": 58.86,
     "originalCurrency": "USD",
-    "change": -2.1000000000000014,
-    "changesPercentage": -3.4805668351703014,
+    "change": -1.4750000000000014,
+    "changesPercentage": -2.4446838485124744,
     "currency": "EUR",
-    "updated": "2026-07-27T13:30:34+00:00"
+    "updated": "2026-07-27T13:45:21+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
@@ -85,7 +85,7 @@
     "change": 0.30000000000000426,
     "changesPercentage": 0.5102040816326603,
     "currency": "EUR",
-    "updated": "2026-07-27T13:30:34+00:00"
+    "updated": "2026-07-27T13:45:21+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
@@ -96,6 +96,6 @@
     "change": 0.13000000000000078,
     "changesPercentage": 1.0517799352750874,
     "currency": "EUR",
-    "updated": "2026-07-27T13:30:34+00:00"
+    "updated": "2026-07-27T13:45:21+00:00"
   }
 }
