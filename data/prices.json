@@ -2,13 +2,13 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 703.74,
-    "originalPrice": 703.74,
+    "price": 703.34,
+    "originalPrice": 703.34,
     "originalCurrency": "EUR",
-    "change": 3.560000000000059,
-    "changesPercentage": 0.5084406866805763,
+    "change": 3.160000000000082,
+    "changesPercentage": 0.45131251963781915,
     "currency": "EUR",
-    "updated": "2026-07-28T13:00:53+00:00"
+    "updated": "2026-07-28T13:15:23+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
@@ -19,62 +19,62 @@
     "change": -0.7349999999999994,
     "changesPercentage": -1.056110352755226,
     "currency": "EUR",
-    "updated": "2026-07-28T13:00:53+00:00"
+    "updated": "2026-07-28T13:15:23+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
     "companyName": "Uber Technologies",
-    "price": 59.97009411557745,
+    "price": 59.96481970096746,
     "originalPrice": 68.18,
     "originalCurrency": "USD",
     "change": 2.240000000000009,
     "changesPercentage": 3.397027600849271,
     "currency": "EUR",
-    "updated": "2026-07-28T13:00:53+00:00"
+    "updated": "2026-07-28T13:15:23+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
     "companyName": "WisdomTree Gold 3x Daily Leveraged",
-    "price": 109.2004573841147,
+    "price": 109.19085312225154,
     "originalPrice": 124.15,
     "originalCurrency": "USD",
     "change": -4.409999999999997,
     "changesPercentage": -3.43030491599253,
     "currency": "EUR",
-    "updated": "2026-07-28T13:00:53+00:00"
+    "updated": "2026-07-28T13:15:23+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 43.985,
-    "originalPrice": 43.985,
+    "price": 43.98,
+    "originalPrice": 43.98,
     "originalCurrency": "EUR",
-    "change": 0.25500000000000256,
-    "changesPercentage": 0.5831237136976962,
+    "change": 0.25,
+    "changesPercentage": 0.5716899153898926,
     "currency": "EUR",
-    "updated": "2026-07-28T13:00:53+00:00"
+    "updated": "2026-07-28T13:15:23+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 48.06931128507345,
-    "originalPrice": 54.65,
+    "price": 48.02990325417766,
+    "originalPrice": 54.61,
     "originalCurrency": "USD",
-    "change": -1.0500000000000043,
-    "changesPercentage": -1.8850987432675121,
+    "change": -1.0900000000000034,
+    "changesPercentage": -1.9569120287253203,
     "currency": "EUR",
-    "updated": "2026-07-28T13:00:53+00:00"
+    "updated": "2026-07-28T13:15:23+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
     "companyName": "LyondellBasell Industries",
-    "price": 51.561263083824436,
+    "price": 51.55672823218997,
     "originalPrice": 58.62,
     "originalCurrency": "USD",
     "change": -1.7000000000000028,
     "changesPercentage": -2.8183023872679094,
     "currency": "EUR",
-    "updated": "2026-07-28T13:00:53+00:00"
+    "updated": "2026-07-28T13:15:23+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
@@ -85,17 +85,17 @@
     "change": 0.0,
     "changesPercentage": 0.0,
     "currency": "EUR",
-    "updated": "2026-07-28T13:00:53+00:00"
+    "updated": "2026-07-28T13:15:23+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
     "companyName": "Alibaba Group Holding",
-    "price": 12.68,
-    "originalPrice": 12.68,
+    "price": 12.5,
+    "originalPrice": 12.5,
     "originalCurrency": "EUR",
-    "change": 0.08000000000000007,
-    "changesPercentage": 0.6349206349206356,
+    "change": -0.09999999999999964,
+    "changesPercentage": -0.7936507936507908,
     "currency": "EUR",
-    "updated": "2026-07-28T13:00:53+00:00"
+    "updated": "2026-07-28T13:15:23+00:00"
   }
 }
