@@ -2,35 +2,35 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 703.06,
-    "originalPrice": 703.06,
+    "price": 703.4,
+    "originalPrice": 703.4,
     "originalCurrency": "EUR",
-    "change": 2.8799999999999955,
-    "changesPercentage": 0.41132280270787447,
+    "change": 3.2200000000000273,
+    "changesPercentage": 0.4598817446942254,
     "currency": "EUR",
-    "updated": "2026-07-28T13:20:39+00:00"
+    "updated": "2026-07-28T13:30:44+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
     "companyName": "iShares Physical Gold ETC",
-    "price": 68.79,
-    "originalPrice": 68.79,
+    "price": 68.8,
+    "originalPrice": 68.8,
     "originalCurrency": "EUR",
-    "change": -0.8049999999999926,
-    "changesPercentage": -1.1566922911128568,
+    "change": -0.7950000000000017,
+    "changesPercentage": -1.142323442776064,
     "currency": "EUR",
-    "updated": "2026-07-28T13:20:39+00:00"
+    "updated": "2026-07-28T13:30:44+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
     "companyName": "Uber Technologies",
-    "price": 59.9490020223336,
-    "originalPrice": 68.18,
+    "price": 60.82827749934055,
+    "originalPrice": 69.18,
     "originalCurrency": "USD",
-    "change": 2.240000000000009,
-    "changesPercentage": 3.397027600849271,
+    "change": 1.0300000000000011,
+    "changesPercentage": 1.5113719735876758,
     "currency": "EUR",
-    "updated": "2026-07-28T13:20:39+00:00"
+    "updated": "2026-07-28T13:30:44+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
@@ -41,51 +41,51 @@
     "change": -4.409999999999997,
     "changesPercentage": -3.43030491599253,
     "currency": "EUR",
-    "updated": "2026-07-28T13:20:39+00:00"
+    "updated": "2026-07-28T13:30:44+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 43.95,
-    "originalPrice": 43.95,
+    "price": 43.955,
+    "originalPrice": 43.955,
     "originalCurrency": "EUR",
-    "change": 0.22000000000000597,
-    "changesPercentage": 0.5030871255431191,
+    "change": 0.22500000000000142,
+    "changesPercentage": 0.5145209238509065,
     "currency": "EUR",
-    "updated": "2026-07-28T13:20:39+00:00"
+    "updated": "2026-07-28T13:30:44+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 48.00580321814825,
-    "originalPrice": 54.597,
+    "price": 47.92666842521762,
+    "originalPrice": 54.507,
     "originalCurrency": "USD",
-    "change": -1.1030000000000015,
-    "changesPercentage": -1.980251346499105,
+    "change": -1.193000000000005,
+    "changesPercentage": -2.141831238779183,
     "currency": "EUR",
-    "updated": "2026-07-28T13:20:39+00:00"
+    "updated": "2026-07-28T13:30:44+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
     "companyName": "LyondellBasell Industries",
-    "price": 51.54312846214719,
-    "originalPrice": 58.62,
+    "price": 51.91242416249011,
+    "originalPrice": 59.04,
     "originalCurrency": "USD",
-    "change": -1.7000000000000028,
-    "changesPercentage": -2.8183023872679094,
+    "change": 0.3999999999999986,
+    "changesPercentage": 0.6821282401091381,
     "currency": "EUR",
-    "updated": "2026-07-28T13:20:39+00:00"
+    "updated": "2026-07-28T13:30:44+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
     "companyName": "Laboratorios Rovi",
-    "price": 59.25,
-    "originalPrice": 59.25,
+    "price": 59.3,
+    "originalPrice": 59.3,
     "originalCurrency": "EUR",
-    "change": 0.0,
-    "changesPercentage": 0.0,
+    "change": 0.04999999999999716,
+    "changesPercentage": 0.08438818565400363,
     "currency": "EUR",
-    "updated": "2026-07-28T13:20:39+00:00"
+    "updated": "2026-07-28T13:30:44+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
@@ -96,6 +96,6 @@
     "change": -0.09999999999999964,
     "changesPercentage": -0.7936507936507908,
     "currency": "EUR",
-    "updated": "2026-07-28T13:20:39+00:00"
+    "updated": "2026-07-28T13:30:44+00:00"
   }
 }
