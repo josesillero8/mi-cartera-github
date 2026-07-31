@@ -2,90 +2,90 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 699.78,
-    "originalPrice": 699.78,
+    "price": 700.0,
+    "originalPrice": 700.0,
     "originalCurrency": "EUR",
-    "change": 9.259999999999991,
-    "changesPercentage": 1.341018362972831,
+    "change": 9.480000000000018,
+    "changesPercentage": 1.3728784104732692,
     "currency": "EUR",
-    "updated": "2026-07-31T10:15:22+00:00"
+    "updated": "2026-07-31T10:30:39+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
     "companyName": "iShares Physical Gold ETC",
-    "price": 68.325,
-    "originalPrice": 68.325,
+    "price": 68.36,
+    "originalPrice": 68.36,
     "originalCurrency": "EUR",
-    "change": -0.7800000000000011,
-    "changesPercentage": -1.128717169524638,
+    "change": -0.7450000000000045,
+    "changesPercentage": -1.0780696042254605,
     "currency": "EUR",
-    "updated": "2026-07-31T10:15:22+00:00"
+    "updated": "2026-07-31T10:30:39+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
     "companyName": "Uber Technologies",
-    "price": 61.1328294674659,
+    "price": 61.159395098209636,
     "originalPrice": 70.37,
     "originalCurrency": "USD",
     "change": -0.8299999999999983,
     "changesPercentage": -1.1657303370786494,
     "currency": "EUR",
-    "updated": "2026-07-31T10:15:22+00:00"
+    "updated": "2026-07-31T10:30:39+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
     "companyName": "WisdomTree Gold 3x Daily Leveraged",
-    "price": 109.38232994526973,
+    "price": 109.42986268034069,
     "originalPrice": 125.91,
     "originalCurrency": "USD",
     "change": -4.650000000000006,
     "changesPercentage": -3.561580882352945,
     "currency": "EUR",
-    "updated": "2026-07-31T10:15:22+00:00"
+    "updated": "2026-07-31T10:30:39+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 44.085,
-    "originalPrice": 44.085,
+    "price": 44.035,
+    "originalPrice": 44.035,
     "originalCurrency": "EUR",
-    "change": -0.06499999999999773,
-    "changesPercentage": -0.14722536806341502,
+    "change": -0.11500000000000199,
+    "changesPercentage": -0.2604756511891325,
     "currency": "EUR",
-    "updated": "2026-07-31T10:15:22+00:00"
+    "updated": "2026-07-31T10:30:39+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 47.93024063938841,
-    "originalPrice": 55.1725,
+    "price": 47.946723448635495,
+    "originalPrice": 55.1675,
     "originalCurrency": "USD",
-    "change": -0.46999999999999886,
-    "changesPercentage": -0.8446780788066657,
+    "change": -0.4750000000000014,
+    "changesPercentage": -0.8536640158152518,
     "currency": "EUR",
-    "updated": "2026-07-31T10:15:22+00:00"
+    "updated": "2026-07-31T10:30:39+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
     "companyName": "LyondellBasell Industries",
-    "price": 52.50629832334288,
+    "price": 52.52911524422041,
     "originalPrice": 60.44,
     "originalCurrency": "USD",
     "change": -0.05000000000000426,
     "changesPercentage": -0.08265829062655689,
     "currency": "EUR",
-    "updated": "2026-07-31T10:15:22+00:00"
+    "updated": "2026-07-31T10:30:39+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
     "companyName": "Laboratorios Rovi",
-    "price": 59.0,
-    "originalPrice": 59.0,
+    "price": 58.95,
+    "originalPrice": 58.95,
     "originalCurrency": "EUR",
-    "change": -0.25,
-    "changesPercentage": -0.42194092827004215,
+    "change": -0.29999999999999716,
+    "changesPercentage": -0.5063291139240459,
     "currency": "EUR",
-    "updated": "2026-07-31T10:15:22+00:00"
+    "updated": "2026-07-31T10:30:39+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
@@ -96,6 +96,6 @@
     "change": 0.5399999999999991,
     "changesPercentage": 4.299363057324833,
     "currency": "EUR",
-    "updated": "2026-07-31T10:15:22+00:00"
+    "updated": "2026-07-31T10:30:39+00:00"
   }
 }
