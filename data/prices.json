@@ -2,90 +2,90 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 719.96,
-    "originalPrice": 719.96,
+    "price": 724.96,
+    "originalPrice": 724.96,
     "originalCurrency": "EUR",
-    "change": 0.0,
-    "changesPercentage": 0.0,
+    "change": 5.0,
+    "changesPercentage": 0.6944830268348241,
     "currency": "EUR",
-    "updated": "2026-08-05T07:15:26+00:00"
+    "updated": "2026-08-05T07:30:33+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
     "companyName": "iShares Physical Gold ETC",
-    "price": 70.115,
-    "originalPrice": 70.115,
+    "price": 70.105,
+    "originalPrice": 70.105,
     "originalCurrency": "EUR",
-    "change": 1.5649999999999977,
-    "changesPercentage": 2.283005105762214,
+    "change": 1.5550000000000068,
+    "changesPercentage": 2.2684172137126284,
     "currency": "EUR",
-    "updated": "2026-08-05T07:15:26+00:00"
+    "updated": "2026-08-05T07:30:33+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
     "companyName": "Uber Technologies",
-    "price": 62.372205856870565,
+    "price": 62.393829086496794,
     "originalPrice": 71.99,
     "originalCurrency": "USD",
     "change": 0.37999999999999545,
     "changesPercentage": 0.530652143555363,
     "currency": "EUR",
-    "updated": "2026-08-05T07:15:26+00:00"
+    "updated": "2026-08-05T07:30:33+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
     "companyName": "WisdomTree Gold 3x Daily Leveraged",
-    "price": 111.08993242072432,
-    "originalPrice": 128.22,
+    "price": 118.84208701681402,
+    "originalPrice": 137.12,
     "originalCurrency": "USD",
-    "change": 4.039999999999992,
-    "changesPercentage": 3.253341923014972,
+    "change": 8.900000000000006,
+    "changesPercentage": 6.941194821400722,
     "currency": "EUR",
-    "updated": "2026-08-05T07:15:26+00:00"
+    "updated": "2026-08-05T07:30:33+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 41.14,
-    "originalPrice": 41.14,
+    "price": 39.55,
+    "originalPrice": 39.55,
     "originalCurrency": "EUR",
-    "change": 0.0,
-    "changesPercentage": 0.0,
+    "change": -1.5900000000000034,
+    "changesPercentage": -3.864851725814301,
     "currency": "EUR",
-    "updated": "2026-08-05T07:15:26+00:00"
+    "updated": "2026-08-05T07:30:33+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 48.98847686709409,
-    "originalPrice": 56.5425,
+    "price": 50.83636678800486,
+    "originalPrice": 58.655,
     "originalCurrency": "USD",
-    "change": 2.0999999999999943,
-    "changesPercentage": 3.8572806171648883,
+    "change": 2.1125000000000043,
+    "changesPercentage": 3.7361276915594543,
     "currency": "EUR",
-    "updated": "2026-08-05T07:15:26+00:00"
+    "updated": "2026-08-05T07:30:33+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
     "companyName": "LyondellBasell Industries",
-    "price": 52.9457632992549,
+    "price": 52.96411856474259,
     "originalPrice": 61.11,
     "originalCurrency": "USD",
     "change": 0.490000000000002,
     "changesPercentage": 0.8083140877598186,
     "currency": "EUR",
-    "updated": "2026-08-05T07:15:26+00:00"
+    "updated": "2026-08-05T07:30:33+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
     "companyName": "Laboratorios Rovi",
-    "price": 58.95,
-    "originalPrice": 58.95,
+    "price": 59.1,
+    "originalPrice": 59.1,
     "originalCurrency": "EUR",
-    "change": 0.4000000000000057,
-    "changesPercentage": 0.683176771989762,
+    "change": 0.14999999999999858,
+    "changesPercentage": 0.254452926208649,
     "currency": "EUR",
-    "updated": "2026-08-05T07:15:26+00:00"
+    "updated": "2026-08-05T07:30:33+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
@@ -96,6 +96,6 @@
     "change": 0.0,
     "changesPercentage": 0.0,
     "currency": "EUR",
-    "updated": "2026-08-05T07:15:26+00:00"
+    "updated": "2026-08-05T07:30:33+00:00"
   }
 }
