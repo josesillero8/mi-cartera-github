@@ -2,24 +2,24 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 721.98,
-    "originalPrice": 721.98,
+    "price": 721.82,
+    "originalPrice": 721.82,
     "originalCurrency": "EUR",
-    "change": -0.4399999999999409,
-    "changesPercentage": -0.060906397940248186,
+    "change": -0.599999999999909,
+    "changesPercentage": -0.08305417900942791,
     "currency": "EUR",
-    "updated": "2026-08-06T08:45:20+00:00"
+    "updated": "2026-08-06T09:00:52+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
     "companyName": "iShares Physical Gold ETC",
-    "price": 71.645,
-    "originalPrice": 71.645,
+    "price": 71.58,
+    "originalPrice": 71.58,
     "originalCurrency": "EUR",
-    "change": 0.4200000000000017,
-    "changesPercentage": 0.5896805896805921,
+    "change": 0.355000000000004,
+    "changesPercentage": 0.498420498420504,
     "currency": "EUR",
-    "updated": "2026-08-06T08:45:20+00:00"
+    "updated": "2026-08-06T09:00:52+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
@@ -30,40 +30,40 @@
     "change": -3.809999999999988,
     "changesPercentage": -5.292401722461436,
     "currency": "EUR",
-    "updated": "2026-08-06T08:45:20+00:00"
+    "updated": "2026-08-06T09:00:52+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
     "companyName": "WisdomTree Gold 3x Daily Leveraged",
-    "price": 126.17356660315261,
-    "originalPrice": 145.68,
+    "price": 126.32946474969687,
+    "originalPrice": 145.86,
     "originalCurrency": "USD",
-    "change": 0.5500000000000114,
-    "changesPercentage": 0.3789705781023988,
+    "change": 0.7300000000000182,
+    "changesPercentage": 0.5029973127540951,
     "currency": "EUR",
-    "updated": "2026-08-06T08:45:20+00:00"
+    "updated": "2026-08-06T09:00:52+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 39.5,
-    "originalPrice": 39.5,
+    "price": 39.43,
+    "originalPrice": 39.43,
     "originalCurrency": "EUR",
-    "change": 0.36999999999999744,
-    "changesPercentage": 0.9455660618451249,
+    "change": 0.29999999999999716,
+    "changesPercentage": 0.7666751852798291,
     "currency": "EUR",
-    "updated": "2026-08-06T08:45:20+00:00"
+    "updated": "2026-08-06T09:00:52+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 50.91806686298285,
-    "originalPrice": 58.79,
+    "price": 50.96743460938853,
+    "originalPrice": 58.847,
     "originalCurrency": "USD",
-    "change": -0.6199999999999974,
-    "changesPercentage": -1.0435953543174508,
+    "change": -0.5629999999999953,
+    "changesPercentage": -0.9476519104527779,
     "currency": "EUR",
-    "updated": "2026-08-06T08:45:20+00:00"
+    "updated": "2026-08-06T09:00:52+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
@@ -74,28 +74,28 @@
     "change": -2.0799999999999983,
     "changesPercentage": -3.4036982490590706,
     "currency": "EUR",
-    "updated": "2026-08-06T08:45:20+00:00"
+    "updated": "2026-08-06T09:00:52+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
     "companyName": "Laboratorios Rovi",
-    "price": 58.9,
-    "originalPrice": 58.9,
+    "price": 58.8,
+    "originalPrice": 58.8,
     "originalCurrency": "EUR",
-    "change": 0.25,
-    "changesPercentage": 0.4262574595055414,
+    "change": 0.14999999999999858,
+    "changesPercentage": 0.2557544757033224,
     "currency": "EUR",
-    "updated": "2026-08-06T08:45:20+00:00"
+    "updated": "2026-08-06T09:00:52+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
     "companyName": "Alibaba Group Holding",
-    "price": 13.77,
-    "originalPrice": 13.77,
+    "price": 13.74,
+    "originalPrice": 13.74,
     "originalCurrency": "EUR",
-    "change": -0.19000000000000128,
-    "changesPercentage": -1.3610315186246509,
+    "change": -0.22000000000000064,
+    "changesPercentage": -1.575931232091695,
     "currency": "EUR",
-    "updated": "2026-08-06T08:45:20+00:00"
+    "updated": "2026-08-06T09:00:52+00:00"
   }
 }
