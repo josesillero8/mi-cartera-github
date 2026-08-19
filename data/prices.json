@@ -2,13 +2,13 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 715.38,
-    "originalPrice": 715.38,
+    "price": 715.32,
+    "originalPrice": 715.32,
     "originalCurrency": "EUR",
-    "change": -1.0199999999999818,
-    "changesPercentage": -0.14237855946398406,
+    "change": -1.0799999999999272,
+    "changesPercentage": -0.15075376884421096,
     "currency": "EUR",
-    "updated": "2026-08-19T08:56:56+00:00"
+    "updated": "2026-08-19T09:00:45+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
@@ -19,7 +19,7 @@
     "change": 0.08500000000000796,
     "changesPercentage": 0.11672617412799774,
     "currency": "EUR",
-    "updated": "2026-08-19T08:56:56+00:00"
+    "updated": "2026-08-19T09:00:45+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
@@ -30,7 +30,7 @@
     "change": -0.3299999999999983,
     "changesPercentage": -0.44005867448992975,
     "currency": "EUR",
-    "updated": "2026-08-19T08:56:56+00:00"
+    "updated": "2026-08-19T09:00:45+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
@@ -41,7 +41,7 @@
     "change": -0.22999999999998977,
     "changesPercentage": -0.14838709677418696,
     "currency": "EUR",
-    "updated": "2026-08-19T08:56:56+00:00"
+    "updated": "2026-08-19T09:00:45+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
@@ -52,18 +52,18 @@
     "change": -0.21000000000000085,
     "changesPercentage": -0.5308392315470193,
     "currency": "EUR",
-    "updated": "2026-08-19T08:56:56+00:00"
+    "updated": "2026-08-19T09:00:45+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 51.81449875010775,
-    "originalPrice": 60.11,
+    "price": 51.90500818894924,
+    "originalPrice": 60.215,
     "originalCurrency": "USD",
-    "change": -0.4575000000000031,
-    "changesPercentage": -0.7553555949973222,
+    "change": -0.35249999999999915,
+    "changesPercentage": -0.5819952945061281,
     "currency": "EUR",
-    "updated": "2026-08-19T08:56:56+00:00"
+    "updated": "2026-08-19T09:00:45+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
@@ -74,7 +74,7 @@
     "change": 0.5999999999999943,
     "changesPercentage": 0.9269272362119486,
     "currency": "EUR",
-    "updated": "2026-08-19T08:56:56+00:00"
+    "updated": "2026-08-19T09:00:45+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
@@ -85,7 +85,7 @@
     "change": -0.20000000000000284,
     "changesPercentage": -0.34482758620690146,
     "currency": "EUR",
-    "updated": "2026-08-19T08:56:56+00:00"
+    "updated": "2026-08-19T09:00:45+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
@@ -96,6 +96,6 @@
     "change": -0.1999999999999993,
     "changesPercentage": -1.445086705202307,
     "currency": "EUR",
-    "updated": "2026-08-19T08:56:56+00:00"
+    "updated": "2026-08-19T09:00:45+00:00"
   }
 }
