@@ -2,13 +2,13 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 707.08,
-    "originalPrice": 707.08,
+    "price": 707.64,
+    "originalPrice": 707.64,
     "originalCurrency": "EUR",
-    "change": -5.959999999999923,
-    "changesPercentage": -0.8358577358913839,
+    "change": -5.399999999999977,
+    "changesPercentage": -0.7573207674183745,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
@@ -19,7 +19,7 @@
     "change": 0.41500000000000625,
     "changesPercentage": 0.5700549450549537,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
@@ -30,7 +30,7 @@
     "change": -2.6300000000000097,
     "changesPercentage": -3.471488912354817,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
@@ -41,29 +41,29 @@
     "change": 0.8949999999999818,
     "changesPercentage": 0.5721591817164658,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 38.635,
-    "originalPrice": 38.635,
+    "price": 38.62,
+    "originalPrice": 38.62,
     "originalCurrency": "EUR",
-    "change": -0.33500000000000085,
-    "changesPercentage": -0.8596356171413931,
+    "change": -0.3500000000000014,
+    "changesPercentage": -0.8981267641775762,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 54.07261179297914,
-    "originalPrice": 63.0,
+    "price": 53.94129259291048,
+    "originalPrice": 62.847,
     "originalCurrency": "USD",
-    "change": -0.13000000000000256,
-    "changesPercentage": -0.2059242832250951,
+    "change": -0.28300000000000125,
+    "changesPercentage": -0.4482813242515464,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
@@ -74,7 +74,7 @@
     "change": 1.0700000000000003,
     "changesPercentage": 1.6845088161209072,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
@@ -85,18 +85,18 @@
     "change": -1.1499999999999986,
     "changesPercentage": -1.9607843137254877,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
     "companyName": "Alibaba Group Holding",
-    "price": 12.14,
-    "originalPrice": 12.14,
+    "price": 12.0,
+    "originalPrice": 12.0,
     "originalCurrency": "EUR",
-    "change": -0.019999999999999574,
-    "changesPercentage": -0.1644736842105228,
+    "change": -0.16000000000000014,
+    "changesPercentage": -1.3157894736842117,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   },
   "US5951121038": {
     "symbol": "MU",
@@ -107,6 +107,6 @@
     "change": -16.33000000000004,
     "changesPercentage": -1.6063506428353653,
     "currency": "EUR",
-    "updated": "2026-09-09T12:30:34+00:00"
+    "updated": "2026-09-09T12:45:23+00:00"
   }
 }
