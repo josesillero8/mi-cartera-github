@@ -8,7 +8,7 @@
     "change": 5.0,
     "changesPercentage": 0.6878146752139104,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
@@ -19,18 +19,18 @@
     "change": -0.0350000000000108,
     "changesPercentage": -0.04769367036861866,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
     "companyName": "Uber Technologies",
-    "price": 61.39185172232908,
-    "originalPrice": 70.22,
+    "price": 61.387480328728806,
+    "originalPrice": 70.215,
     "originalCurrency": "USD",
-    "change": -0.6200000000000045,
-    "changesPercentage": -0.8752117447769686,
+    "change": -0.625,
+    "changesPercentage": -0.8822699040090344,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
@@ -41,7 +41,7 @@
     "change": -2.2849999999999966,
     "changesPercentage": -1.5162574651625726,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
@@ -52,7 +52,7 @@
     "change": -0.11999999999999744,
     "changesPercentage": -0.3448275862068892,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
@@ -63,18 +63,18 @@
     "change": -0.3780000000000001,
     "changesPercentage": -0.6001428911645632,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
     "companyName": "LyondellBasell Industries",
-    "price": 52.797691904179054,
-    "originalPrice": 60.39,
+    "price": 52.88511977618465,
+    "originalPrice": 60.49,
     "originalCurrency": "USD",
-    "change": 0.14999999999999858,
-    "changesPercentage": 0.24900398406374266,
+    "change": 0.25,
+    "changesPercentage": 0.41500664010624166,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
@@ -85,7 +85,7 @@
     "change": 0.25,
     "changesPercentage": 0.4248088360237893,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
@@ -96,17 +96,17 @@
     "change": 0.41999999999999993,
     "changesPercentage": 3.359999999999999,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   },
   "US5951121038": {
     "symbol": "MU",
     "companyName": "Micron Technology",
-    "price": 946.638398321385,
-    "originalPrice": 1082.765,
+    "price": 948.2540653960483,
+    "originalPrice": 1084.613,
     "originalCurrency": "USD",
-    "change": 38.805000000000064,
-    "changesPercentage": 3.7170964404766527,
+    "change": 40.65300000000002,
+    "changesPercentage": 3.894114717038969,
     "currency": "EUR",
-    "updated": "2026-09-22T17:30:40+00:00"
+    "updated": "2026-09-22T17:45:21+00:00"
   }
 }
