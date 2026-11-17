@@ -2,13 +2,13 @@
   "IE00B5BMR087": {
     "symbol": "SXR8.DE",
     "companyName": "iShares Core S&P 500 UCITS ETF",
-    "price": 724.5,
-    "originalPrice": 724.5,
+    "price": 724.0,
+    "originalPrice": 724.0,
     "originalCurrency": "EUR",
-    "change": -9.980000000000018,
-    "changesPercentage": -1.3587844461387673,
+    "change": -10.480000000000018,
+    "changesPercentage": -1.4268598191918116,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   },
   "IE00B4ND3602": {
     "symbol": "PPFB.SG",
@@ -19,62 +19,62 @@
     "change": 0.4350000000000023,
     "changesPercentage": 0.6415929203539856,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   },
   "US90353T1007": {
     "symbol": "UBER",
     "companyName": "Uber Technologies",
-    "price": 63.592585862256946,
+    "price": 63.58680839465794,
     "originalPrice": 69.99,
     "originalCurrency": "USD",
     "change": 0.29999999999999716,
     "changesPercentage": 0.43047783039173076,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   },
   "IE00B8HGT870": {
     "symbol": "3GOL.L",
     "companyName": "WisdomTree Gold 3x Daily Leveraged",
-    "price": 91.67726694530256,
-    "originalPrice": 100.9,
+    "price": 90.99663850277096,
+    "originalPrice": 100.16,
     "originalCurrency": "USD",
-    "change": 0.980000000000004,
-    "changesPercentage": 0.9807846277021658,
+    "change": 0.23999999999999488,
+    "changesPercentage": 0.24019215372297326,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   },
   "DK0062498333": {
     "symbol": "NOV.DE",
     "companyName": "Novo Nordisk A/S",
-    "price": 37.62,
-    "originalPrice": 37.62,
+    "price": 37.63,
+    "originalPrice": 37.63,
     "originalCurrency": "EUR",
-    "change": -0.45000000000000284,
-    "changesPercentage": -1.1820330969267214,
+    "change": -0.4399999999999977,
+    "changesPercentage": -1.155765694772781,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   },
   "IE00B4NCWG09": {
     "symbol": "ISLN.L",
     "companyName": "iShares Physical Silver ETC",
-    "price": 40.95947664910049,
-    "originalPrice": 45.08,
+    "price": 40.928500045425636,
+    "originalPrice": 45.05,
     "originalCurrency": "USD",
-    "change": 0.46750000000000114,
-    "changesPercentage": 1.04791258055478,
+    "change": 0.4375,
+    "changesPercentage": 0.9806668534603531,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   },
   "NL0009434992": {
     "symbol": "LYB",
     "companyName": "LyondellBasell Industries",
-    "price": 56.03307286934399,
+    "price": 56.02798219314982,
     "originalPrice": 61.67,
     "originalCurrency": "USD",
     "change": -2.760000000000005,
     "changesPercentage": -4.283718764550683,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   },
   "ES0157261019": {
     "symbol": "ROVI.MC",
@@ -85,7 +85,7 @@
     "change": -0.75,
     "changesPercentage": -1.0775862068965518,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   },
   "KYG017191142": {
     "symbol": "2RR.F",
@@ -96,17 +96,17 @@
     "change": -0.375,
     "changesPercentage": -3.6231884057971016,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   },
   "US5951121038": {
     "symbol": "MU",
     "companyName": "Micron Technology",
-    "price": 653.2982009812829,
+    "price": 653.2388480058145,
     "originalPrice": 719.02,
     "originalCurrency": "USD",
     "change": -59.289999999999964,
     "changesPercentage": -7.61778725700556,
     "currency": "EUR",
-    "updated": "2026-11-17T09:30:51+00:00"
+    "updated": "2026-11-17T09:45:27+00:00"
   }
 }
